@@ -1,0 +1,19 @@
+##### SOPHOS COMMUNITY POST ##### 
+
+https://community.sophos.com/intercept-x-endpoint/i/user/live-discovery-query-identify-new-admin-accounts
+
+### DEFINE 'Days' AS A VARIABLE TYPE STRING ###
+
+SELECT 
+   u.username,
+   (SELECT datetime FROM sophos_windows_events WHERE eventid = '4720' AND json_extract(json_extract(data, '$.EventData'),'$.TargetSid') = u.uuid ) Creation_Date,
+   u.description,
+   u.directory,
+   u.shell,
+   u.uuid,
+   u.type,
+   ug.uid
+FROM user_groups ug 
+   JOIN users u ON u.uid = ug.uid 
+WHERE ug.gid = 544 AND 
+   (SELECT time FROM sophos_windows_events WHERE eventid = '4720' AND json_extract(json_extract(data, '$.EventData'),'$.TargetSid') = u.uuid ) > strftime('%s','NOW','-$$Days$$ days');
