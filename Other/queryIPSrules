@@ -1,0 +1,13 @@
+WITH ips_rule_table AS (SELECT * FROM grep WHERE path = 'C:\ProgramData\Sophos\Sophos Network Threat Protection\IPS\system.rules' AND pattern = '(msg:'),
+ips_rule_descr AS (
+SELECT
+SPLIT(line, ' ', 0) Rule_Action,
+LTRIM(SPLIT(line, ' ', 1)) Protocol,
+LTRIM(SPLIT(line, ' ', 2)) Source_Addr,
+LTRIM(SPLIT(line, ' ', 3)) Source_Port,
+LTRIM(SPLIT(line, ' ', 4)) Direction,
+LTRIM(SPLIT(line, ' ', 5)) Destination_Addr,
+LTRIM(SPLIT(line, ' ', 6)) Destination_Port,
+SPLIT(substr(line,instr(line,'msg:"')+5,LENGTH(line)-instr(line,'msg:"')),'"',0) Rule
+FROM ips_rule_table)
+SELECT * FROM ips_rule_descr
