@@ -1,5 +1,12 @@
 # Sophos Intercept-X with XDR Queries
 
+  _________________ __________  ___ ___ ________    _________ ____  ___________ __________ 
+ /   _____/\_____  \\______   \/   |   \\_____  \  /   _____/ \   \/  /\______ \\______   \
+ \_____  \  /   |   \|     ___/    ~    \/   |   \ \_____  \   \     /  |    |  \|       _/
+ /        \/    |    \    |   \    Y    /    |    \/        \  /     \  |    `   \    |   \
+/_______  /\_______  /____|    \___|_  /\_______  /_______  / /___/\  \/_______  /____|_  /
+        \/         \/                \/         \/        \/        \_/        \/       \/ 
+
 _Live Discover allows you to check the devices that Sophos Central is managing, look for signs of a threat, or assess compliance._
 
 _Sophos Intercept-X with XDR allows you to query (90) days of data live while storing (30) days of queries in your Data Lake._
