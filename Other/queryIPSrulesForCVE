@@ -2,7 +2,7 @@
 
 https://community.sophos.com/intercept-x-endpoint/i/other-queries/query-ips-snort-rules-on-endpoint
 
-### DEFINE STRING OPERATOR VARIABLE AS Vuln-Numb ###
+### DEFINE STRING OPERATOR VARIABLE IN CENTRAL AS Vuln-Numb ###
 
 WITH ips_rule_table AS (SELECT * FROM grep WHERE path = 'C:\ProgramData\Sophos\Sophos Network Threat Protection\IPS\system.rules' AND pattern = '(msg:'),
 ips_rule_descr AS (
