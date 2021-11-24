@@ -1,0 +1,7 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/compliance/live-discover---compliance-report-queries
+
+############ 
+
+select json_extract(data,'$.liveProtectionEnabled') AS LiveProtectionEnabled from registry where path like 'HKEY_LOCAL_MACHINE\SOFTWARE\Sophos\SystemProtection\Telemetry\PolicyConfiguration';
