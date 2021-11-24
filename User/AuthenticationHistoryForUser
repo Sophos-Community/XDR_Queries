@@ -1,0 +1,30 @@
+##### SOPHOS COMMUNITY POST ######
+
+https://community.sophos.com/intercept-x-endpoint/i/user/live-discover-query---authentication-history-for-a-user
+
+### DEFINE STRING VARIABLE AS 'UserName' ###
+
+SELECT DISTINCT
+   eventid AS Event_ID,
+   time AS Epoch_Time,
+   datetime(time,'unixepoch') Data_Time,
+   COUNT(task_message) Logon_Count,
+   CASE json_extract(swe.data,'$.EventData.LogonType')
+      WHEN '2' THEN 'Interactive'
+      WHEN '3' THEN 'Network'
+      WHEN '4' THEN 'Batch'
+      WHEN '5' THEN 'Service'
+      WHEN '7' THEN 'Unlock'
+      WHEN '8' THEN 'NetworkClearText'
+      WHEN '9' THEN 'NewCredentials'
+      WHEN '10' THEN 'RemoteInteractive'
+      WHEN '11' THEN 'CacheInteractive'
+   END 'Logon_Type_Human',
+   json_extract(swe.data,'$.EventData.IpAddress') IP_Address,
+   json_extract(swe.data,'$.EventData.TargetUserName') Target_User_Name
+FROM sophos_windows_events swe
+WHERE eventID 
+   IN (4672,4624,4625) 
+      AND time > strftime('%s','now','-90 days') 
+      AND Target_User_Name LIKE '%$$UserName$$%'
+GROUP BY Logon_Type_Human;
