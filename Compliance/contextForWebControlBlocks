@@ -1,0 +1,76 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/compliance/ability-to-view-url-s-warn-block-using-edr
+
+############ 
+
+ 
+WITH log_file AS (SELECT REPLACE(line,CHAR(9),',') AS line FROM grep WHERE pattern IN ("url") AND path = 'C:\ProgramData\Sophos\Web Intelligence\Logs\$$YYYY-MM-DD$$.log'),
+log_table AS (SELECT
+   SPLIT(line, ',', 0) Time, LTRIM(SPLIT(line, ',', 1),('action'||'=')) Action, LTRIM(SPLIT(line, ',', 2),'why=') Why,LTRIM(SPLIT(line, ',', 4),'threat=') Threat,
+   LTRIM(SPLIT(line, ',', 5),'fileclass=') FileClass,
+   CASE
+    CAST (LTRIM(SPLIT(line, ',', 6),'category=') AS INT)
+     WHEN 0 THEN 'Uncategorized'
+     WHEN 1 THEN 'Adult/Sexually Explicit'
+     WHEN 2 THEN 'Advertisements & Pop-Ups'
+     WHEN 3 THEN 'Alcohol & Tobacco'
+     WHEN 4 THEN 'Arts'
+     WHEN 5 THEN 'Blogs & Forums'
+     WHEN 6 THEN 'Business'
+     WHEN 7 THEN 'Chat'
+     WHEN 8 THEN 'Computing & Internet'
+     WHEN 9 THEN 'Criminal Activity'
+     WHEN 10 THEN 'Downloads'
+     WHEN 11 THEN 'Education'
+     WHEN 12 THEN 'Entertainment'
+     WHEN 13 THEN 'Fashion & Beauty'
+     WHEN 14 THEN 'Finance & Investment'
+     WHEN 15 THEN 'Food & Dining'
+     WHEN 16 THEN 'Gambling'
+     WHEN 17 THEN 'Games'
+     WHEN 18 THEN 'Government'
+     WHEN 19 THEN 'Hacking'
+     WHEN 20 THEN 'Health & Medicine'
+     WHEN 21 THEN 'Hobbies & Recreation'
+     WHEN 22 THEN 'Hosting Sites'
+     WHEN 23 THEN 'Illegal Drugs'
+     WHEN 24 THEN 'Infrastructure'
+     WHEN 25 THEN 'Intimate Apparel & Swimwear'
+     WHEN 26 THEN 'Intolerance & Hate'
+     WHEN 27 THEN 'Job Search & Career Development'
+     WHEN 28 THEN 'Kids Sites'
+     WHEN 29 THEN 'Motor Vehicles'
+     WHEN 30 THEN 'News'
+     WHEN 31 THEN 'Peer-to-Peer'
+     WHEN 32 THEN 'Personals and Dating'
+     WHEN 33 THEN 'Philantropic & Professional Orgs.'
+     WHEN 34 THEN 'Phishing & Fraud'
+     WHEN 35 THEN 'Photo Searches'
+     WHEN 36 THEN 'Polotics'
+     WHEN 37 THEN 'Proxies & Translators'
+     WHEN 38 THEN 'Real Estate'
+     WHEN 39 THEN 'Reference'
+     WHEN 40 THEN 'Religion'
+     WHEN 41 THEN 'Ringtones/Mobile Phone Downloads'
+     WHEN 42 THEN 'Search Engines'
+     WHEN 43 THEN 'Sex Education'
+     WHEN 44 THEN 'Shopping'
+     WHEN 45 THEN 'Society & Culture'
+     WHEN 46 THEN 'Spam URLs'
+     WHEN 47 THEN 'Sports'
+     WHEN 48 THEN 'Spyware'
+     WHEN 49 THEN 'Streaming Media'
+     WHEN 50 THEN 'Tasteless & Offensive'
+     WHEN 51 THEN 'Travel'
+     WHEN 52 THEN 'Violence'
+     WHEN 53 THEN 'Weapons'
+     WHEN 54 THEN 'Web-based E-mail'
+     WHEN 55 THEN 'Custom'
+     WHEN 56 THEN 'Anonymizing Proxies'
+    ELSE 'Others'
+   END Category,
+   LTRIM((REPLACE(SPLIT(line, ',', 7),'hxxp','http')),'url=') URL
+FROM log_File
+)
+SELECT * FROM log_Table
