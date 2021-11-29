@@ -1,0 +1,12 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/user/find-local-administrative-accounts
+
+### QUERY ###
+
+SELECT username, groupname, type, u.UID, g.GID, Description, comment 
+FROM users u 
+JOIN user_groups ug ON ug.UID = u.UID 
+JOIN groups g ON g.GID = ug.GID 
+WHERE g.GROUPNAME = "Administrators" 
+AND u.type = "local";
