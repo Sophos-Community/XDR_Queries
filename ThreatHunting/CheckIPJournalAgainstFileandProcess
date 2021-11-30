@@ -1,0 +1,34 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/check-ip-journal-against-file-properties-processes
+
+### DEFINE $$IPaddress$$ AS IPADDRESS TYPE ###
+
+SELECT datetime(sophos_ip_journal.processStartTime, 'unixepoch', 'localtime') AS process_timestamp,
+sophos_process_journal.PID AS ProcessID, 
+sophos_process_journal.pathName,
+sophos_process_journal.processName,
+sophos_process_journal.cmdLine AS CLI_Log,
+datetime(sophos_ip_journal.time, 'unixepoch', 'localtime') AS ip_timestamp,
+sophos_ip_journal.source, 
+sophos_ip_journal.destination, 
+sophos_ip_journal.destinationPort,
+CASE
+	WHEN (sophos_file_properties.mlScore >= 27 AND sophos_file_properties.mlScore < 30) THEN 'High'
+	WHEN (sophos_file_properties.mlScore >= 24 AND sophos_file_properties.mlScore < 27) THEN 'Medium'
+    WHEN (sophos_file_properties.mlScore >= 20 AND sophos_file_properties.mlScore < 24) THEN 'Low'
+	WHEN (sophos_file_properties.mlScore > 30 AND sophos_file_properties.puaScore > 20) THEN 'High (likely PUA)'
+	ELSE 'N/A'
+END AS threatIndicationLevel,
+CASE
+    WHEN (sophos_file_properties.globalRep >= 65 OR sophos_file_properties.localRep >= 65) THEN 'Safe'
+    WHEN (sophos_file_properties.globalRep >= 30 AND sophos_file_properties.globalRep <= 64 OR sophos_file_properties.localRep >= 30 AND sophos_file_properties.localRep <= 64) THEN 'Potential'
+    ELSE 'Bad'
+END AS reputationLevel,
+FROM sophos_ip_journal
+JOIN sophos_process_journal
+ON sophos_ip_journal.sophosPID = sophos_process_journal.sophosPID
+JOIN sophos_file_properties 
+ON sophos_process_journal.sha256 = sophos_file_properties.sha256
+WHERE source <> '127.0.0.1' OR '::1'
+AND destination = '$$IPaddress$$'
