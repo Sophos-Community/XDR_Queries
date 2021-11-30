@@ -1,0 +1,11 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/compliance/query-who-has-modified-an-active-directory-object
+
+############ 
+
+SELECT datetime(time, 'unixepoch', 'localtime') AS EventTimeStamp, source,
+provider_name, eventid, task_message, data
+FROM sophos_windows_events
+WHERE eventid
+IN ('4728', '4732', '4735', '4737')
