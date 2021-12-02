@@ -1,0 +1,82 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/follow-up-windows-updates-patch-data-lake
+
+############ 
+
+ -- DEFINE VARIABLE $$no.of.days$$      STRING
+
+WITH xdr_win_upd_pat AS (
+SELECT 
+    meta_hostname AS ep_name,
+    meta_endpoint_type,
+    meta_ip_address,
+    hotfix_id,
+    caption,
+    description,
+    installed_by,
+    /*
+    current_date today,
+    rtrim(substr(installed_on, 1,2),'/') mois,
+    rtrim(substr(installed_on, 3,2),'/') jour,
+    substr(installed_on, length(installed_on)-3,4) annee,
+    concat(substr(installed_on, length(installed_on)-3,4),'-',rtrim(substr(installed_on, 1,2),'/'),'-',rtrim(substr(installed_on, 3,2),'/')) date_str,
+    */
+    CASE length(rtrim(substr(installed_on, 1,2),'/')) 
+      WHEN 1 THEN concat('0',rtrim(substr(installed_on, 1,2),'/'))
+      ELSE rtrim(substr(installed_on, 1,2),'/')
+   END mois,
+   CASE length(ltrim(rtrim(substr(installed_on, 3,2),'/'),'/')) 
+      WHEN 1 THEN concat('0',ltrim(rtrim(substr(installed_on, 3,2),'/'),'/'))
+      ELSE rtrim(substr(installed_on, 3,2),'/')
+   END jour,
+   substr(installed_on, length(installed_on)-3,4) annee
+FROM xdr_data
+WHERE query_name = 'windows_updates_patch'
+),
+xdr_win_upd_pat2 AS (
+
+SELECT 
+   ep_name,
+   meta_ip_address,
+   description,
+   /*caption,*/
+   hotfix_id,
+   meta_endpoint_type,
+   /*length(concat(jour,'-',mois,'-',annee)) installed_on_length
+   concat(jour,'-',mois,'-',annee) installed_on*/
+   /*cast(date_parse('01-01-1900','%d-%m-%Y') as date) installed_on*/
+   
+   CASE length(concat(jour,'-',mois,'-',annee))
+      WHEN 10 THEN cast(date_parse(concat(jour,'-',mois,'-',annee),'%d-%m-%Y') as date)
+      ELSE cast(date_parse('01-01-1900','%d-%m-%Y') as date)
+   END installed_on
+   /*current_date - interval '$$no.of.days$$' day check_date
+   cast(date_parse(concat(jour,'-',mois,'-',annee),'%d-%m-%Y') as date) AS installed_on*/
+FROM xdr_win_upd_pat 
+/*WHERE 
+   installed_on < current_date - interval '$$no.of.days$$' day
+ORDER BY installed_on DESC*/
+
+),
+
+xdr_win_upd_pat3 AS (
+SELECT 
+   ep_name,
+   /*meta_ip_address,
+   description,
+   caption,
+   hotfix_id,
+   meta_endpoint_type,*/
+   MAX(installed_on) AS max_date
+FROM xdr_win_upd_pat2
+GROUP BY ep_name
+)
+SELECT 
+   ep_name,
+   current_date - interval '$$no.of.days$$' day checkdate,
+   max_date
+FROM xdr_win_upd_pat3 
+WHERE 
+   max_date < current_date - interval '$$no.of.days$$' day
+ORDER BY max_date DESC
