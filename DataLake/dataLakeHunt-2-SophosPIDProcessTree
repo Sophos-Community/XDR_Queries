@@ -1,0 +1,116 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/hunting-in-the-data-lake-then-pivoting-to-the-device-for-details
+
+############ 
+
+ -- Process Tree with MITRE enrichment for CMD LINE
+-- VARIABLE $$sophosPID$$      SophosPID
+
+-- Generate Process Tree
+WITH RECURSIVE
+get_ancestors(sophosPID, level, startTime, cmdLine, procName,    parentSophosPID, sha256, sid) AS (
+    SELECT sophosPID, 0, processStartTime, cmdLine, processName, parentSophosPID, sha256, sid
+    FROM sophos_process_journal
+    WHERE sophosPID = '$$sophosPID$$' AND eventtype = 0
+
+    UNION ALL
+
+    SELECT p.sophosPID, get_ancestors.level - 1, p.processStartTime, p.cmdLine, p.processName, p.parentSophosPID, p.sha256, p.sid
+    FROM sophos_process_journal p
+    JOIN get_ancestors ON p.sophosPID = get_ancestors.parentSophosPID 
+    ORDER BY 2 ASC
+),
+ancestor_tree AS (
+    SELECT DISTINCT 
+        startTime,
+        printf('%.' || ABS(level) || 'c', '<') || ' ' || procName processBranch,
+        sophosPID,
+        cmdLine,
+        sha256,
+        sid
+    FROM get_ancestors
+    WHERE level < 0
+    ORDER BY level ASC
+),
+get_children(sophosPID, level, startTime, cmdLine, procName, targetsophosPID, sha256, sid) AS (
+    SELECT p.sophosPID, 0, p.processStartTime, p.cmdLine, p.processName,spa.targetsophosPID, p.sha256, p.sid
+    FROM sophos_process_journal p
+    LEFT JOIN sophos_process_activity spa ON spa.sophosPID = p.sophosPID AND subject = 'Process' 
+    WHERE p.sophosPID = '$$sophosPID$$'
+
+    UNION ALL
+
+    SELECT p.sophosPID, get_children.level + 1, p.processStartTime, p.cmdLine, p.processName, spa.targetsophosPID, p.sha256, p.sid
+    FROM sophos_process_journal p
+    JOIN get_children ON p.sophosPID = get_children.targetsophosPID LEFT JOIN sophos_process_activity spa ON spa.sophosPID = p.sophosPID AND subject = 'Process'
+    ORDER BY 2 DESC
+),
+child_tree AS (
+    SELECT
+        DISTINCT startTime,
+        CASE
+            WHEN level = 0 THEN procName
+            ELSE printf('%.' || level || 'c', '>') || ' ' || procName
+        END as processBranch,
+        sophosPID,
+        cmdLine,
+        sha256,
+        sid
+    FROM get_children
+),
+Full_Tree AS (
+    SELECT * FROM ancestor_tree
+    UNION ALL
+    SELECT * FROM child_tree
+),
+
+-- Get map from GIT LOCATION
+mitre_map_file(Line, str) AS (
+  SELECT '', (SELECT result from curl where url = 'https://raw.githubusercontent.com/karlrackerman/Query_Library/main/MITRE_ID_MAP.CSV') ||char(10)
+  UNION ALL
+  SELECT substr(str, 0, instr(str, char(10) )), substr(str, instr(str, char(10) )+1) FROM mitre_map_file WHERE str!=''
+ ),
+-- Create Table for Mitre_MAP
+mitre_map (Tid, tactic, id, technique, subid, subtechnique) AS (
+   SELECT SPLIT(Line,',',0) Tid, SPLIT(Line,',',1) tactic, SPLIT(Line,',',2) id, SPLIT(Line,',',3) technique, SPLIT(Line,',',4) subid, SPLIT(Line,',',5) subtechnique
+   FROM mitre_map_file WHERE Line != '' 
+),
+-- Get detection rules from GIT LOCATION
+mitre_rule_file(Line, str) AS (
+  SELECT '', (SELECT result from curl where url = 'https://raw.githubusercontent.com/karlrackerman/Query_Library/main/TTP_Rules.CSV') ||char(10)
+  UNION ALL
+  SELECT substr(str, 0, instr(str, char(10) )), substr(str, instr(str, char(10) )+1) FROM mitre_rule_file WHERE str!=''
+),
+-- Create Table for Detection_Rules
+mitre_detection_rules (method, noise_level, id,subid,process,indicator) AS (
+   SELECT SPLIT(Line,',',0) method, SPLIT(Line,',',1) noise_level, SPLIT(Line,',',2) id, SPLIT(Line,',',3) subid, SPLIT(Line,',',4) process, SPLIT(Line,',',5) indicator
+   FROM mitre_rule_file WHERE Line != ''
+),
+
+-- Map the methods to the description
+Rule_Map AS ( SELECT mm.id||'.'||mm.subid||' -- '||mm.tactic||':: '||mm.technique||'- '||mm.subtechnique||CHAR(10)||'. Method: '||mdr.method||CHAR(10)||'. Process LIKE: '||mdr.process||CHAR(10)||'. Indicator LIKE: '||mdr.indicator info, mdr.process, mdr.indicator
+FROM mitre_map mm
+JOIN mitre_detection_rules mdr ON CAST(mm.id AS TEXT) = CAST(mdr.id AS TEXT) AND CAST(mm.subid AS TEXT) = CAST(mdr.subid AS TEXT)  
+)
+
+-- USED TO DEBUG
+   -- SELECT * FROM mitre_map
+   -- SELECT CAST(method AS TEXT) Method, CAST(noise_level AS TEXT) Noise_Level, CAST(id AS TEXT) ID, CAST(subid AS TEXT) SubID, CAST(process AS TEXT) Process, CAST(indicator AS TEXT) Indicator FROM mitre_detection_rules
+   -- SELECT * FROM Rule_Map ORDER BY info
+   -- SELECT * FROM mitre_map UNION ALL SELECT * FROM mitre_detection_rules
+
+-- Display the Tree and enrich the CMDLINE
+SELECT 
+   DateTime(starttime,'unixepoch') Date_Time, 
+   processBranch, 
+   cmdline, 
+   -- NOTE GROUP_CONCAT incase a cmdline has multiple TTP hits
+   CAST((SELECT '('||COUNT(info)||') '||CHAR(10)||GROUP_CONCAT(info, CHAR(10)) FROM Rule_Map WHERE processBranch LIKE '%'||process AND Cmdline LIKE indicator) AS TEXT) Mitre_Info,  
+   (SELECT username FROM users WHERE uuid = sid) username, 
+   sophosPID, 
+   (SELECT pathname FROM sophos_process_journal WHERE sophosPID = Full_Tree.sophosPID AND eventtype = 0) pathname,
+   CAST(sha256 AS TEXT) sha256, 
+   sid,
+   ROW_NUMBER() OVER() Row_number
+FROM Full_Tree
