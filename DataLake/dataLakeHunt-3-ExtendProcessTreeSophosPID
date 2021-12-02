@@ -1,0 +1,143 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/hunting-in-the-data-lake-then-pivoting-to-the-device-for-details
+
+############ 
+
+ -- Extended Process Tree for a SophosPID
+
+-- VARIABLE $$SophosPID$$ sophosPID
+
+-- NOTE THE PROCESS OR ANCESTORS MAY STILL BE RUNNING SO HANDLE ENDTIME CORRECTLY by changing endtime for running processes to now + 10 min
+WITH RECURSIVE 
+-- GET A LIST OF ALL ANCESTORS OF A SOPHOS PID
+Ancestors(SophosPID, Level, parent, processname, pathname, cmdline, sha256, sid, start, end) AS (
+   -- Define the SEED Row as the information on the SophosPID provided
+   SELECT sophosPID, 0, ParentSophosPID, processname, pathname, cmdline, sha256, sid, time,
+     CASE WHEN (SELECT endtime FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) > 0) > 0 
+        THEN (SELECT endtime FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) > 0)
+        ELSE strftime('%s','now','+10 minutes') END
+    FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) = 0
+   
+   UNION ALL
+   
+   -- Recursvly identify all decendents
+   SELECT spj.SophosPID, Level - 1, spj.ParentSophosPID, spj.processname, spj.pathname, spj.cmdline, spj.sha256, spj.sid, spj.time, 
+      CASE WHEN (SELECT spj2.endtime FROM sophos_process_Journal spj2 WHERE spj2.SophosPID = spj.SophosPID AND CAST(endtime AS INT) > 0) > 0
+        THEN (SELECT spj2.endtime FROM sophos_process_Journal spj2 WHERE spj2.SophosPID = spj.SophosPID AND CAST(endtime AS INT) > 0)
+        ELSE strftime('%s','now','+10 minutes') END
+   FROM Ancestors JOIN Sophos_Process_Journal spj ON spj.SophosPID = Ancestors.parent AND CAST(spj.endtime AS INT) = 0 
+   -- Perform a Depth First Search ASC would perform a Breadth First Search
+   ORDER BY 2 DESC
+   ),
+-- Add Row Numbers to the Ancestor List so we order the tree corretly
+-- EXCLUDE the line for the specified SophosPID so that when we show the tree we do not have a duplicate row
+Orderd_Ancestors AS (SELECT SophosPID, Level, parent, processname, pathname, cmdline, sha256, sid, start, end, -1 * ROW_Number() OVER () Row FROM Ancestors WHERE SophosPID NOT IN ('$$SophosPID$$') ),
+
+-- GET A LIST OF ALL DECENDENTS OF A SOPHOS PID
+-- NOTE THE PROCESS OR CHILDREN MAY STILL BE RUNNING SO HANDLE ENDTIME CORRECTLY by changing endtime for running processes to now + 10 min
+Children(SophosPID, Level, parent, processname, pathname, cmdline, sha256, sid, start, end) AS (
+   -- Define the SEED Row as the information on the SophosPID provided
+   SELECT sophosPID, 0, ParentSophosPID, processname, pathname, cmdline, sha256, sid, time,
+     CASE WHEN (SELECT endtime FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) > 0) > 0 
+        THEN (SELECT endtime FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) > 0)
+        ELSE strftime('%s','now','+10 minutes') END
+    FROM sophos_process_Journal WHERE sophos_process_journal.SophosPID = '$$SophosPID$$' AND CAST(endtime AS INT) = 0
+   
+   UNION ALL
+   
+   -- Recursvly identify all decendents
+   SELECT spj.SophosPID, Level +1, spj.ParentSophosPID, spj.processname, spj.pathname, spj.cmdline, spj.sha256, spj.sid, spj.time, 
+      CASE WHEN (SELECT spj2.endtime FROM sophos_process_Journal spj2 WHERE spj2.SophosPID = spj.SophosPID AND CAST(endtime AS INT) > 0) > 0
+        THEN (SELECT spj2.endtime FROM sophos_process_Journal spj2 WHERE spj2.SophosPID = spj.SophosPID AND CAST(endtime AS INT) > 0)
+        ELSE strftime('%s','now','+10 minutes') END
+   FROM Children JOIN Sophos_Process_Journal spj ON spj.ParentSophosPID = Children.SophosPID AND CAST(spj.endtime AS INT) = 0 AND spj.time > Children.start -5 and spj.time < Children.end +3600
+   -- Perform a Depth First Search ASC would perform a Breadth First Search
+   ORDER BY 2 DESC
+   ),
+   
+   -- Add Row Numbers to the Decendent List so we order the tree corretly
+   Orderd_Descendants AS (SELECT SophosPID, Level, parent, processname, pathname, cmdline, sha256, sid, start, end, ROW_Number() OVER () Row FROM Children),
+
+   -- Now collect the activity for all descendents and the selected sophosPID using a UNION to list the decendent then the file activity it had
+   File_Activity AS (
+
+     -- FOR ANCESTORS WE WILL ONLY SHOW THE PROCESS TREE INFO (No activity will be collected)
+     SELECT 
+      REPLACE(DATETIME(A.start,'unixepoch'), ' ','T') Date_Time,
+      CASE A.SophosPID 
+		   WHEN '$$SophosPID$$' THEN A.ProcessName 
+		   ELSE substr('< < < < < < < < < < < < < < < < < < < < ', 1, A.Level * -2)  || A.processName 
+	   END Process_Tree,
+	   '-----------' Subject,
+      '-----------' Action,
+      '-----------' Object,
+      CAST(A.cmdline AS TEXT) Cmd_Line,
+      A.SophosPID SophosPID,
+      A.pathname Process_Pathname,
+      A.sha256 Process_SHA256,
+      A.SID Process_SID,
+      A.Level Level,
+      A.Row Row,
+      0 Sub_Row,
+      a.start time
+   FROM Orderd_Ancestors A 
+
+   UNION ALL
+   
+   -- SHOW THE PROCESS TREE INFO FOR DESCENDENTS
+   SELECT 
+      REPLACE(DATETIME(D.start,'unixepoch'), ' ','T') Date_Time,
+      CASE D.SophosPID 
+		   WHEN '$$SophosPID$$' THEN D.ProcessName 
+		   ELSE substr('> > > > > > > > > > > > > > > > > > > > > > ', 1, D.Level * 2) || D.processName 
+	   END Process_Tree,
+	   '-----------' Subject,
+      '-----------' Action,
+      '-----------' Object,
+      CAST(D.cmdline AS TEXT) Cmd_Line,
+      D.SophosPID SophosPID,
+      D.pathname Process_Pathname,
+      D.sha256 Process_SHA256,
+      D.SID Process_SID,
+      D.Level Level,
+      D.Row Row,
+      0 Sub_Row,
+      D.start time
+   FROM Orderd_Descendants D 
+
+   UNION ALL
+
+   -- ADD THE PROCESS ACTIVITY FOR EACH DESCENDENT
+   SELECT 
+      REPLACE(DATETIME(MIN(spa.time),'unixepoch'),' ','T') Date_Time,
+      CASE D.SophosPID 
+		   WHEN '$$SophosPID$$' THEN '( '||D.processname||' ) ACTIVITY' 
+		   ELSE substr('~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~ ~', 1, D.Level * 2) || '( '||D.processname||' ) ACTIVITY' 
+	   END Process_Tree,
+      spa.subject Subject,
+      CAST(GROUP_CONCAT(DISTINCT spa.action)||' ('||COUNT(spa.action)||')' AS TEXT) Action,
+      spa.object,
+      CAST(D.cmdline AS TEXT) Cmd_Line,
+      D.SophosPID SophosPID,
+      D.pathname Process_Pathname,
+      D.sha256 Process_SHA256,
+      D.SID Process_SID,
+      '' Level,
+      D.Row Row,
+      1 Sub_Row,
+      spa.time time
+   -- NOTE The details for each process does not include 'FileDataReads', 'FileOtherReads', 'FileBinaryReads', 'Image', 'Thread' 
+   FROM Orderd_Descendants D LEFT JOIN Sophos_Process_Activity spa ON -- spa.subject IN ('Thread','DirectoryChanges','Dns','FileBinaryChanges','FileDataChanges','FileOtherChanges','Http','Ip','Network','Url','Registry','Process')
+--      AND 
+      spa.SophosPID = D.SophosPID 
+      AND spa.time > D.start-1 
+      AND spa.time < D.end+1
+   WHERE spa.subject > ''
+   GROUP BY spa.subject, spa.action, spa.object, spa.SophosPID, D.processname, D.SophosPID, D.pathname, D.sha256, D.SID
+   )
+   
+-- Now that we have all activity for each descendent, we need to provide the pretty list showing the Process Tree and File activity for each process in the tree
+SELECT Date_Time, Process_Tree, Subject, Action, Object, Cmd_Line, SophosPID, Process_Pathname, Process_SHA256, Process_SID, row, sub_row, time,ROW_NUMBER() OVER( ORDER BY Row, Sub_Row, Time) SORT_ORDER_FOR_EXCEL 
+FROM File_Activity 
+ORDER By SORT_ORDER_FOR_EXCEL
