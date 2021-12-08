@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/last-reboot-time-uptime
+
+############
+
+SELECT
+meta_hostname,
+MAX(meta_boot_time) AS EPOC,
+DATE_FORMAT(FROM_UNIXTIME(MAX(meta_boot_time)), '%Y-%m-%dT%H:%i:%SZ') AS Last_Reboot_Time
+FROM XDR_DATA
+GROUP BY
+meta_hostname
+ORDER BY
+Last_Reboot_Time ASC
