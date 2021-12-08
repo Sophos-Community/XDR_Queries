@@ -1,0 +1,28 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/software-install-count-by-version
+
+############ 
+
+-- Software list temp table
+WITH software_temp AS (
+SELECT DISTINCT
+name,
+MAX(version) AS version,
+meta_hostname
+FROM xdr_data
+WHERE query_name = 'windows_programs'
+Group BY
+name, meta_hostname
+)
+select
+name AS Software_Title,
+version
+,COUNT(version) AS Total_Installs
+from software_temp
+--Add software name below for testing
+--WHERE name LIKE '%DC%'
+GROUP BY
+name, version
+ORDER BY
+name
