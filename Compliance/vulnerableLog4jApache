@@ -1,0 +1,13 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/compliance/identify-vulnerable-log4j-apache-components
+
+############ 
+
+select name, version,
+regex_match(version,"(\d+)",1) as first,
+regex_match(version,"\d+.(\d+)",1) as second,
+regex_match(version,"\d+.\d+.(\d+)",1) as third,
+regex_match(version,"\d+.\d+.\d+p(\d+)",1) as forth from deb_packages where name LIKE 'log4j' UNION ALL select name, version,
+regex_match(version,"(\d+)",1) as first,
+regex_match(version,"\d+.(\d+)",1) as second, regex_match(version,"\d+.\d+.(\d+)",1) as third, regex_match(version,"\d+.\d+.\d+p(\d+)",1) as forth from rpm_packages where name LIKE 'log4j';
