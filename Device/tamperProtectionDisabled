@@ -1,0 +1,9 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---identify-devices-where-tamper-protection-is-disabled
+
+############ 
+
+SELECT
+CASE WHEN data LIKE '0' THEN 'DISABLED' end
+Tamper_Protection FROM registry where key='HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Sophos Endpoint Defense\TamperProtection\Config' AND name='SEDEnabled' AND data=0;
