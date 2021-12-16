@@ -1,0 +1,8 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---uac-check-and-no-need-to-re-invent-the-wheel
+
+############ 
+
+select data 'EnableLUA' from registry
+where key='HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System' AND name='EnableLUA' AND data=0;
