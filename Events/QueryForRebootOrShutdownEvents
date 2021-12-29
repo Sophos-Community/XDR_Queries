@@ -1,0 +1,24 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/query-for-system-reboots-shutdowns
+
+############ 
+
+SELECT DISTINCT
+      eventid,
+      CASE eventid
+      WHEN '41' THEN 'Rebooted without clean shutdown'
+      WHEN '1074' THEN 'Shutdown properly by user or process'
+      WHEN '1076' THEN 'First user with shutdown privs logged on server after unexpected restart/shutdown and specified the cause'
+      WHEN '6005' THEN 'System Start Event Log Service Started'
+      WHEN '6006' THEN 'System Start Event Log Service Stopped - Improper Shutdown'
+      WHEN '6008' THEN 'Previous System Shutdown Unexpected'
+      WHEN '6009' THEN 'OS Version Detected at System Startup'
+      WHEN '6013' THEN 'System Uptime in Seconds'
+   END 'Event_ID_Desc',
+   data,
+   time AS Epoch_Time,
+   datetime(time,'unixepoch') Data_Time
+   FROM sophos_windows_events swe
+WHERE eventid IN (41, 1074, 1076, 6005, 6006, 6008, 6009, 6013)
+AND time > strftime('%s','now','-90 days') 
