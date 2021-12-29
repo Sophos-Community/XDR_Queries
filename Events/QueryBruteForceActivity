@@ -1,0 +1,41 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/live-discover-query---brute-force-activity
+
+############ 
+
+<-- indicators:
+WHERE eventid = 4625 - Windows Failed login event ID.
+AND time > STRFTIME('%s', 'NOW') - 3925 - Looking at the last 65 minutes of data
+AND remote_address NOT IN ('0.0.0.0','::','-','::1')- Can not accurately correlate these types of connections since several logs contain these indicators. 
+GROUP BY remote_address HAVING COUNT(DISTINCT target_username) > 20; - Identify a single address using different target usernames when attempting to authenticate. 
+--> 
+
+SELECT
+        eventid,
+        JSON_EXTRACT(data, '$.EventData.SubjectUserName') AS subject_username,
+        JSON_EXTRACT(data, '$.EventData.SubjectDomainName') AS subject_domain,
+        JSON_EXTRACT(data, '$.EventData.TargetUserName') AS target_username,
+        JSON_EXTRACT(data, '$.EventData.TargetDomainName') AS target_domain,
+        JSON_EXTRACT(data, '$.EventData.Status') AS status,
+        JSON_EXTRACT(data, '$.EventData.FailureReason') AS failure_reason,
+        JSON_EXTRACT(data, '$.EventData.SubStatus') AS sub_status,
+        JSON_EXTRACT(data, '$.EventData.LogonType') AS logon_type,
+        JSON_EXTRACT(data, '$.EventData.LogonProcessName') AS logon_process,
+        JSON_EXTRACT(data, '$.EventData.AuthenticationPackageName') AS authentication_package,
+        JSON_EXTRACT(data, '$.EventData.TransmittedServices') AS transmitted_services,
+        JSON_EXTRACT(data, '$.EventData.KeyLength') AS key_length,
+        JSON_EXTRACT(data, '$.EventData.ProcessName') AS name,
+        JSON_EXTRACT(data, '$.EventData.IpAddress') AS remote_address,
+        JSON_EXTRACT(data, '$.EventData.IpPort') AS remote_port,
+        'Source IP is shuffling through 20 different usernames, appears to be a brute force attack' AS description,
+        provider_name,
+        source
+      FROM sophos_windows_events
+      WHERE eventid = 4625
+      AND source = 'Security'
+      AND remote_address IS NOT NULL
+      AND remote_address NOT LIKE '127.%.%.%'
+      AND remote_address NOT IN ('0.0.0.0','::','-','::1')
+      AND time > STRFTIME('%s', 'NOW') - 3925
+      GROUP BY remote_address HAVING COUNT(DISTINCT target_username) > 20;
