@@ -1,0 +1,18 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/live-discover-query---history-of-safe-mode-system-startup
+
+############ 
+
+SELECT
+   CAST(datetime(time, 'unixepoch') AS TEXT) AS 'System Startup Date-Time',
+   CASE JSON_EXTRACT(data, '$.EventData.BootMode')
+      WHEN '0' THEN 'Normal_Boot'
+      WHEN '1' THEN 'Safe-Mode'
+      ELSE 'Unknown Mode: ' || JSON_EXTRACT(data, '$.EventData.BootMode')
+   END AS 'Boot Mode',
+   'Windows ' || JSON_EXTRACT(data, '$.EventData.MajorVersion') || '.' || JSON_EXTRACT(data, '$.EventData.MinorVersion') || '.' || JSON_EXTRACT(data, '$.EventData.BuildVersion') AS 'OS_Version'
+FROM sophos_windows_events
+WHERE (eventid = 12 AND task = 1) 
+   AND time > STRFTIME('%s','NOW','-90 DAYS')
+ORDER by 1 DESC;
