@@ -1,0 +1,419 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/att-ck/mitre-ttp-hunting-across-linux
+
+############ 
+
+/**************************************************************************\
+| this query was derived from examination of the the purple team field     |
+| manual ptfm in july 2021.  rules are for nix systems only                |
+\**************************************************************************/
+-- common mitre att&ck ttps (ptfm)
+-- variable  $$device_name$$                  deviceName
+-- variable  $$mitre_id$$                     string
+-- variable  $$tactic name$$                  string
+-- variable  $$technique name$$               string
+-- variable  $$number of hours to search$$    string
+-- variable  $$verbosity 0-9$$                string  verbosity score of 10 indicates it has not been evaluated
+
+-- provide a map to the mitre info
+with mitre_techniques(id, subid, tactic, technique, subtechnique) as (
+    values
+        -- collection
+        ('t1039', '', 'collection','data from network shared drive', ''),
+        ('t1113', '', 'collection','screen capture', ''),
+        ('t1115', '', 'collection','clipboard data', ''),
+        ('t1123', '', 'collection','audio capture', ''),
+        ('t1560', '.001', 'collection','archive collected data', 'archive via utility'),
+        -- command and control
+        ('t1071', '.001', 'command and control','application layer protocol', 'web protocols'),
+        ('t1090', '', 'command and control','proxy', ''),
+        ('t1105', '', 'command and control','ingress tool transfer', ''),
+        ('t1219', '', 'command and control','remote access software', ''),
+        ('t1572', '', 'command and control','protocol tunneling', ''),
+        -- credential access
+        ('t1003', '', 'credential access','os credential dumping', ''),
+        ('t1003', '.008', 'credential access','os credential dumping', '/etc/passwd and /etc/shadow'),
+        ('t1056', '.001', 'credential access','input capture', 'keylogging'),
+        ('t1110', '.002', 'credential access','brute force', 'credential cracking'),
+        ('t1187', '', 'credential access','forced authentication', ''),
+        ('t1555', '', 'credential access','credentials from password stores', ''),
+        ('t1556', '', 'credential access','modify authentication process', ''),
+        -- defense evasion
+        ('t1070', '.006', 'defense evasion','indicator removal on host', 'timestomp'),
+        ('t1222', '.002', 'defense evasion','linux and mac file and directory permissions modification', ''),
+        ('t1553', '.002', 'defense evasion','subvert trust controls', 'code signing'),
+        ('t1562', '', 'defense evasion','impair defenses', ''),
+        ('t1562', '.001', 'defense evasion','impair defenses', 'disable or modify tools'),
+        ('t1562', '.003', 'defense evasion','impair defenses', 'impair command history logging'),
+        ('t1562', '.004', 'defense evasion','impair defenses', 'disable or modify system firewall'),
+        -- discovery
+        ('t1016', '', 'discovery','system network configuration discovery', ''),
+        ('t1018', '', 'discovery','remote system discovery', ''),
+        ('t1033', '', 'discovery','system owner user discovery', ''),
+        ('t1046', '', 'discovery','network service scanning', ''),
+        ('t1057', '', 'discovery','process discovery', ''),
+        ('t1082', '', 'discovery','system information discovery', ''),
+        ('t1083', '', 'discovery','file and directory discover', ''),
+        ('t1087', '', 'discovery','account discovery', ''),
+        -- execution
+        ('t1059', '.004', 'execution','command and scripting interpreter', 'unix shell'),
+        -- exfiltration
+        ('t1048', '', 'exfiltration','exfiltratioin over alternative protocol', ''),
+        -- initial access
+        -- impact
+        ('t1485', '', 'impact','data destruction', ''),
+        ('t1489', '', 'impact','service stop', ''),
+        ('t1531', '', 'impact','account access removal', ''),
+        -- lateral movement
+        ('t1021', '.001', 'lateral movement','remote services', 'remote desktop protocol'),
+        ('t1021', '.002', 'lateral movement','remote services', 'smb windows admin shares'),
+        ('t1021', '.004', 'lateral movement','remote services', 'ssh'),
+        -- persistence
+        ('t1037', '.005', 'persistence','boot or logon initialization scripts', 'startup items'),
+        ('t1037', '.002', 'persistence','boot or logon initialization scripts', 'logon script mac'),
+        ('t1136', '.001', 'persistence','create account', 'local account'),
+        ('t1547', '', 'persistence','boot or logon autostart execution', ''),
+        ('t1547', '.007', 'persistence','boot or logon autostart execution', 're-opened application'),
+        -- privelege escalation
+        ('t1548', '', 'privelege escalation','abuse elevation control mechanism', ''),
+        ('t1548', '.001', 'privelege escalation','abuse elevation control mechanism', 'setuid and setgid'),
+        ('t1548', '.002', 'privelege escalation','abuse elevation control mechanism', 'bypass user account control'),
+        ('t1548', '.003', 'privelege escalation','abuse elevation control mechanism', 'sudo and sudo caching'),
+        -- resource development
+        ('t1588', '.001', 'resource development','obtain capabilities', 'malware')
+),
+
+-- provide detection rules based on cmd_line evaluations everything has to be lowercase
+-- all rules are for any process's cmd_line
+mitre_methods(noise_level, id, subid, process, indicator, descriptioin) as (
+    values
+-- t1000-1099
+(10,'t1003','.008','unshadow','%passwd%','extract passwords from shadow'),
+(10,'t1003','','find','%id_rsa%','find ssh keys'),
+(10,'t1003','','find','%id_dsa%','find ssh keys'),
+(10,'t1016','','ifconfig','%.%.%.%/%','set ip address and network mask'),
+(10,'t1016','','ifconfig','%:1%.%.%.%/%','set virtual interface ip addr'),
+(10,'t1016','','route','%add%default%gw%%.%.%.%','set default gateway'),
+(10,'t1016','','ifconfig','%mtu%','set mtu size'),
+(10,'t1016','','macchanger','%-m%','change mac address'),
+--(10,'t1018','','%','%host%.%.%.%','get hostname for ip address'),
+(10,'t1021','.001','rdesktop','%','remote desktop'),
+(10,'t1021','.001','ssh','%','secure shell'),
+(10,'t1021','.004','ssh','%','lateral movement with ssh'),
+(10,'t1021','.002','%','%smb://%.%.%.%/%','access windows smb'),
+(10,'t1021','.002','smbclient','%u%\\%\\%','connect smb'),
+(10,'t1033','','%','%whoami','get the current user'),
+(10,'t1033','','whoami','%','get the current user'),
+(10,'t1033','','w','%','show logged in users'),
+(10,'t1033','','who','%-a%','show logged in users'),
+(10,'t1033','','%','%who -a%','show logged in users'),
+(10,'t1033','','last','%-a%','user login history'),
+(10,'t1033','','%','%last -a%','user login history'),
+(10,'t1037','.002','%','%>>%.bashrc%','set bash file'),
+(10,'t1037','.002','%','%>>%.bash_profile%','set bash file'),
+(10,'t1037','.005','%','%>>%inittab%','startup script'),
+(10,'t1037','.005','%','%>>%init.d%','startup script'),
+(10,'t1037','.005','%','%>>%rc.d%','startup script'),
+(10,'t1037','.005','%','%>>%init.conf%','startup script'),
+(10,'t1037','.005','%','%>>%init%','startup script'),
+(10,'t1037','.005','%','%>>%network/if-up.d%','startup script'),
+(10,'t1037','.005','crontab','%-a%','install a crontab file'),
+(10,'t1037','.005','crontab','%-e%','edit crontab file'),
+(10,'t1037','.005','at','%','onetime only cron job'),
+(10,'t1037','.005','batch','%','onetime only cron job'),
+(10,'t1039','','share','%.%.%.%','mount a share drive'),
+(10,'t1046','','%','%for%254%do%ping%','ping sweep'),
+(10,'t1046','','nc','%-n%-z%-v%-w','port scanning'),
+(10,'t1046','','nmap','%s%l%','network scanning'),
+(10,'t1048','','tar','%zcf%|%ssh%','ssh tarball'),
+(10,'t1048','','tar','%zcf%>%tcp%','raw port encoded'),
+(10,'t1048','','%','%.7z%>%','move a 7zip file'),
+(10,'t1048','','%','%gz%>%','move a gzip file'),
+(10,'t1048','','%','%bz2%>%','move a bz2 file'),
+(10,'t1048','','%','%tar%>%','move a tar file'),
+(10,'t1048','','%','%rar%>%','move a rar file'),
+(10,'t1048','','%','%zip%>%','move a zip file'),
+(10,'t1056','.001','sudo','%logkeys%','key logging'),
+(10,'t1056','.001','%','%logkeys%','key logging'),
+(10,'t1056','.001','%','%keylog%','key logging'),
+(10,'t1056','.001','%','%keysniff%','key logging'),
+(10,'t1056','.001','%','%kisni%','key logging'),
+(10,'t1056','.001','%','%lkl%','key logging'),
+(10,'t1056','.001','%','%ttyrpid%','key logging'),
+(10,'t1056','.001','%','%vlogger%','key logging'),
+(10,'t1056','.001','%','%uber%','key logging'),
+(10,'t1057','','%','ps %','list running processes'),
+(10,'t1057','','ps','%','list running processes'),
+(10,'t1059','.004','%','%vim%chmod%sh%','create and execute a script'),
+(10,'t1059','.004','bash','%-c%curl%|%bash%','execute script from web location'),
+(10,'t1059','.004','wget','%-c%wget%|%bash%','execute script from web location'),
+(10,'t1059','.004','source','%','exectue a script from a file'),
+(10,'t1070','.006','touch','%-%--date=%','change a timestamp for a file'),
+(10,'t1070','.006','sudo','%date%--set%','change a timestamp for a file'),
+(10,'t1071','.001','curl','%','get html web page'),
+(10,'t1071','.001','wget','%','retrive file'),
+(10,'t1071','.001','dd','%if=/dev/zero bs=1 count=1%>>%','binary padding'),
+(10,'t1087','','last','%-aif%','user login, logout and connection information'),
+(10,'t1082','','df','%','display free diskspace'),
+(10,'t1082','','%','df%','display free diskspace'),
+(10,'t1082','','uname','%-a%','shows kernal and os version'),
+(10,'t1082','','%','%uname -a%','shows kernal and os version'),
+(10,'t1082','','mount','%','show mounted drives'),
+(10,'t1082','','%','mount%','show mounted drives'),
+(10,'t1082','','%','%cat%etc/issue%','show os information'),
+(10,'t1082','','cat','%etc/issue%','show os information'),
+(10,'t1082','','%','cat%proc%version%','show kernel versioin'),
+(10,'t1082','','cat','%proc%version%','show kernel versioin'),
+(10,'t1082','','%','rpm%-qa%','show installed packages'),
+(10,'t1082','','rpm','%-qa%','show installed packages'),
+(10,'t1082','','%','dpkg%-i%.deb%','install deb package'),
+(10,'t1082','','dpkg','%-i%.deb%','install deb package'),
+(10,'t1082','','%','dpkg%-get%-sel%','show installed packages'),
+(10,'t1082','','dpkg','%-get%-sel%','show installed packages'),
+(10,'t1082','','pkginfo','%','solaris show installed packages'),
+(10,'t1082','','%','pkginfo','solaris show installed packages'),
+(10,'t1082','','cat','%etc/shells%','show location of shell executables'),
+(10,'t1082','','%','cat%etc/shells%','show location of shell executables'),
+(10,'t1082','','ss','%-a%','list listening and non-listening ports'),
+(10,'t1082','','ss','%','listing network connections'),
+(10,'t1082','','watch','%ss%-tcp%','monitor processes with tcp connection'),
+(10,'t1082','','netstat','%-an%t%','list tcp connections'),
+(10,'t1082','','netstat','%-an%u%','list udp connections'),
+(10,'t1082','','netstat','%anop','list network connections with pid'),
+(10,'t1082','','lsof','%-i%','list established connections'),
+(10,'t1082','','iwlist','%scan%','wifi scanner'),
+(10,'t1082','','dig','%-x%','lookup domain by ip'),
+(10,'t1082','','host','%.%.%.%','lookup domain by ip'),
+(10,'t1082','','host','%-t%','lookup domain by ip'),
+(10,'t1082','','dig','%axfr%','host transfer'),
+(10,'t1082','','host','%-l%domain%','host transfer'),
+(10,'t1082','','ip','%xfrm%state%list%','print vpn keys'),
+(10,'t1082','','ip','%addr%add%def','print vpn keys'),
+(10,'t1082','','echo','%>>%etc/resolv.conf%','add dns server'),
+(10,'t1082','','script ','%-a%','record shell'),
+(10,'t1082','','history','%','show users bash history'),
+(10,'t1082','','env','%','print envirohment variables'),
+(10,'t1082','','top','%','show top processes'),
+(10,'t1082','','ifconfig','%','show ip addresses'),
+(10,'t1082','','lsof','%','list files associated with an application'),
+(10,'t1082','','cat','%/home/%.bash_history%','print bash history'),
+(10,'t1082','','sysdig','%-c%spy_users%','print all bash commands'),
+(10,'t1082','','ps','%-aux%grep','find a specific process'),
+(10,'t1082','','ps','%-aux%','get running process'),
+(10,'t1082','','hostnamectl','%','host enumeration'),
+(10,'t1082','','echo','%$user%','current username'),
+(10,'t1082','','cut','%-d%password%','list of local users'),
+(10,'t1082','','sudo','%-l%','permissions of user'),
+(10,'t1082','','ifconfig','%','network information'),
+(10,'t1082','','route','%','prints routing table'),
+(10,'t1082','','arp','%-e%','print arp table'),
+(10,'t1082','','systemctl','%status%%ufw%','current firewall state'),
+(10,'t1082','','crontab','%-l%','list of scheduled tasks'),
+(10,'t1082','','ps','%aux% ','list services with pids'),
+(10,'t1082','','lsmod','%','list drivers'),
+(10,'t1082','','timedatectl','%','current timezone'),
+(10,'t1082','','dmidecode','%','virtual machine detection'),
+(10,'t1082','','ioreg','%-i%','apple macos manufacture'),
+(10,'t1082','','system_profiler','%','apple macos manufacture'),
+(10,'t1083','','ls','%','list directory'),
+(10,'t1083','','locate','%','locate file'),
+(10,'t1083','','pwd','%','print working directory'),
+(10,'t1083','','cat','%','print contents'),
+(10,'t1083','','head','%','display header of file'),
+(10,'t1083','','tail','%','display tail of file'),
+(10,'t1087','','getent','passwd','get entries in passwd(users)'),
+(10,'t1087','','%','%getent%passwd%','get entries in passwd(users)'),
+(10,'t1090','','yum','%install%nginx%','nginx proxy for armitage/metasploit'),
+(10,'t1090','','%','%armitage%','armitage proxy'),
+(10,'t1090','','sudo','%socat%tcp4-listen%fork%','linux redirect with socat'),
+ -- t1100-1199
+(10,'t1105','','scp','%@%:%','get or put a file'),
+(10,'t1110','.002','%','%huntergregal%mimi%','password hunter for nix systems'),
+(10,'t1113','','import','%window%root%','screen capture'),
+(10,'t1115','','xclip','%selection%clipboard%','clipboard data capture'),
+(10,'t1123','','arecored','%vv%fdat%','audio capture'),
+(10,'t1136','.001','useradd','%','add user'),
+(10,'t1136','.001','useradd','%-r%-s%bash%','add a user'),
+(10,'t1136','.001','useradd','%-u 0%-g 0%','add user with root user id and group id'),
+(10,'t1187','','mount','%-n%-o%remount%rw%','remount with password disabled?'),
+-- t1200-1299
+(10,'t1219','','%','%cobaltstrike%','remote access tool'),
+(10,'t1219','','%','%empire%','remote access tool'),
+(10,'t1219','','%','%metasploit%','remote access tool'),
+(10,'t1219','','%','%silenttri%','remote access tool'),
+(10,'t1219','','%','%pupy%','remote access tool'),
+(10,'t1219','','%','%koadic%','remote access tool'),
+(10,'t1219','','%','%poshc2%','remote access tool'),
+(10,'t1219','','%','%gcat%','remote access tool'),
+(10,'t1219','','%','%trevorc2%','remote access tool'),
+(10,'t1219','','%','%merlin%','remote access tool'),
+(10,'t1219','','%','%quasar%','remote access tool'),
+(10,'t1219','','%','%covenant%','remote access tool'),
+(10,'t1219','','%','%factionc2%','remote access tool'),
+(10,'t1219','','%','%dnscat%','remote access tool'),
+(10,'t1219','','%','%eggshell%','remote access tool'),
+(10,'t1219','','%','%evilgrade%','remote access tool'),
+(10,'t1219','','%','%redcloud%','remote access tool'),
+(10,'t1222','.002','chmod','%','change file permisions'),
+ -- t1300-1399
+(10,'t1553','.002','%','%rpm%-i%%:rpm%','install rpm package'),
+(10,'t1553','.002','rpm','%-i%:rpm%','install rpm package'),
+-- t1400-1499
+(10,'t1485','','rm','%','remove a file'),
+(10,'t1485','','rmdir','%','remove a directory'),
+(10,'t1489','','crontab','%-r%','remove crontab file'),
+-- t1500-1599
+(10,'t1531','','rmuser','%','remove a user'),
+(10,'t1531','','chsh','%-s%/bin/rbash%','retrict user bash'),
+(10,'t1531','','rm','%/home/%.bashrc%','remove user bashrc file'),
+(10,'t1547','.007','%','%path%=%path%:%/%','add tp the path variable'),
+(10,'t1547','','tcpkill','%host%port%','block ip and port'),
+(10,'t1547','','tcpkill','%host%','block ip'),
+(10,'t1547','','echo','%/proc/sys/net/ipv4/ip_forward%','block ip'),
+(10,'t1548','.001','chmod','%u+s%','files executed will get the users id not the person running it'),
+(10,'t1548','.001','chmod','%g+s%','files executed will get the group id not the person running it'),
+(10,'t1548','.001','chmod','%s+u%','files executed will get the users id not the person running it'),
+(10,'t1548','.002','find','%/%-perm%u=s%tu[e%f%','find processess with elevated privs to pivot from'),
+(10,'t1548','.002','find','%/%user%root%perm%6000%','find processess with elevated privs to pivot from'),
+(10,'t1548','.003','sudo','%-l%','list of binaries and command that can be run with sudo permisions'),
+(10,'t1548','.003','sudo','%sed%-l%env_reset%timestamp_timeout%','sudo credentials can be cached for an unlimited amount of time'),
+(10,'t1548','.003','sudo','%visudo -c -f /etc/sudoers%','sudo credentials can be cached for an unlimited amount of time'),
+(10,'t1548','','chown','%root% %','chown owner to root'),
+(10,'t1548','','wget','%exploit-db.com%','online db of exploit techniques'),
+(10,'t1548','','ls','%-la /etc/cron.d%','cron jobs can allow for privilege excalation'),
+(10,'t1548','','netstat','%antup%','vulnerable services that are running as root to escalate privileges'),
+(10,'t1548','','ps','%aux%|%grep%root%','vulnerable services that are running as root to escalate privileges'),
+(10,'t1548','','echo','%.so%>%etc/ld.so.preload%','process injection via shared library'),
+(10,'t1548','','sudo','%python%-c%import%spawn%bash%','python to run elevated shell'),
+(10,'t1548','','sudo','%find%home%exec%sh%-i%','executable to elevate privileges'),
+(10,'t1555','','grep','%password%','search for passwords'),
+(10,'t1555','','cat','%.bash_history%','search bash history, may contain passwords'),
+(10,'t1555','','%','%|%grep%pass%','search history, may contain passwords'),
+(10,'t1556','','passwd','%','change a user password'),
+(10,'t1560','.001','zip','%-r%','add image to file'),
+(10,'t1560','.001','cat','%>%','add to another file'),
+(10,'t1562','.001','%','kill %','kill a process with pid'),
+(10,'t1562','.001','%','kill %-9%','force kill a process'),
+(10,'t1562','.001','service','%iptables%stop%','disable ip tables'),
+(10,'t1562','.001','service','%ip6tables%stop%','disable ip tables'),
+(10,'t1562','.001','service','%rsyslog%stop%','disable rsyslog'),
+(10,'t1562','.001','systemctl','%disable%rsyslog','disable rsyslog'),
+(10,'t1562','.001','systemctl','%disable%','disable a service'),
+(10,'t1562','.001','%init.d%syslog%','stop','disable rsyslog'),
+(10,'t1562','.001','setenforce','%0%','disable selinux'),
+(10,'t1562','.003','unset','%histfile%','disable history loging'),
+(10,'t1562','.003','export','%histfilesize=0%','set max length of history file to 0'),
+(10,'t1562','.003','export','%histsize=0%','set max command length to 0'),
+(10,'t1562','.003','history','%-c%','clear current history'),
+(10,'t1562','.003','rm','%.bash_history%','remove bash history file'),
+(10,'t1562','.003','echo','%>.bash_history%','clear current user bash history'),
+(10,'t1562','.003','ln','%dev%null%.bash_history%','send bash histor to dev null'),
+(10,'t1562','.003','shred','%-n%-z%-u%','removing file that may be evidence'),
+(10,'t1562','.004','sudo','%ufw%disable%','disable firewall'),
+(10,'t1562','.004','systemctl','%disable%ufw%','disable firewall'),
+(10,'t1562','.004','sudo','%systemctl%stop%firewall%','disable firewall'),
+(10,'t1562','.004','%','%stop%firewalld%','disable firewall'),
+(10,'t1562','','chmod','%-x%','remove executable status'),
+(10,'t1572','','%','%dnssteal%','exfiltrate over dns'),
+(10,'t1572','','%','%for%base64%sed%','exfiltrate over dns'),
+(10,'t1572','','%','%for%cat%do%dig%done%','exfiltrate over dns'),
+(10,'t1588','.001','git','%rootkit%','download rootkit')
+),
+
+mitre_methods_id as ( select row_number() over( order by id, subid, process, indicator) rule_id, id, noise_level, subid, process, indicator from mitre_methods ),
+
+-- identify which rules to run based on admin variable selections
+ttp(mitre_id, mitre_subid, tactic, technique, subtechnique, process, hunt_rule, mitre_link, rule_id, noise_level) as (
+    select
+        mitre_techniques.id as mitre_id,
+        mitre_techniques.subid as mitre_subid,
+        mitre_techniques.tactic as tactic,
+        mitre_techniques.technique as technique,
+        mitre_techniques.subtechnique as subtechnique,
+        mitre_methods_id.process as process,
+        mitre_methods_id.indicator as hunt_rule,
+        case mitre_techniques.subid
+            when '' then 'https://attack.mitre.org/techniques/' || mitre_techniques.id
+            else 'https://attack.mitre.org/techniques/' || mitre_techniques.id || '/' || mitre_techniques.subid
+        end as mitre_link,
+        mitre_methods_id.rule_id rule_id,
+        noise_level
+    from mitre_methods_id 
+    left join mitre_techniques on
+        mitre_methods_id.id = mitre_techniques.id
+        and mitre_methods_id.subid = mitre_techniques.subid
+        and mitre_methods_id.id || '.' || mitre_methods_id.subid like upper('%$$mitre_id$$%')
+    where
+        mitre_methods_id.noise_level <= $$verbosity 0-9$$
+        and mitre_techniques.tactic like lower('%$$tactic name$$%')
+        and mitre_techniques.technique like lower('%$$technique name$$%')
+),
+
+-- perform the evaluations
+detections as (
+    select
+        xdr_data.meta_hostname as hostname,
+        xdr_data.meta_endpoint_type as device_type,
+        date_format(from_unixtime(xdr_data.time), '%y-%m-%dt%h:%i:%sz') as date_time,
+        ttp.mitre_id,
+        ttp.mitre_subid,
+        ttp.tactic,
+        ttp.technique,
+        ttp.subtechnique,
+        ttp.process process_filter,
+        ttp.hunt_rule,
+        ttp.mitre_link,
+        xdr_data.username as username,
+        xdr_data.name as process_name,
+        xdr_data.cmdline as cmd_line,
+        xdr_data.sophos_pid as sophos_pid,
+        xdr_data.path as path_name,
+        xdr_data.parent_name,
+        ttp.rule_id,
+        ttp.noise_level
+    from xdr_data
+    join ttp on lower(xdr_data.name) like '%'||ttp.process||'%' and lower(xdr_data.cmdline) like '%'||ttp.hunt_rule||'%'
+    where
+        xdr_data.query_name in ( 'running_processes_linux_events', 'running_processes_osx_events', 'running_processes_windows_sophos')
+        and lower(xdr_data.meta_hostname) like lower('%$$device_name$$%')
+        and cast(xdr_data.time as int) > cast(to_unixtime(now()) as int) - $$number of hours to search$$ * 3600
+)
+
+-- group results so we can show counted number of events
+select
+    array_join(array_agg(distinct hostname), chr(10)) as ep_name,
+    max(date_time) as last_seen,
+    mitre_id,
+    tactic,
+    cmd_line,
+    technique,
+    count(hostname) as instances,
+    process_name,
+    subtechnique,
+    mitre_subid,
+    mitre_link,
+    process_filter,
+    hunt_rule,
+    count(distinct hostname) as ep_count,
+    min(date_time) as first_seen,
+    array_join(array_agg(distinct path_name), chr(10)) as path_name_list,
+    array_join(array_agg(distinct parent_name), chr(10)) as parent_name_list,
+    min_by(sophos_pid,replace(sophos_pid, rtrim(sophos_pid, replace(sophos_pid, ':', '')), '') ) earliest_sophospid,  -- note this is expensive
+    array_join(array_agg(distinct sophos_pid), chr(10)) as full_sophos_pid_list,
+    array_join(array_agg(distinct username), chr(10)) as user_list,
+    noise_level
+from detections
+group by
+    mitre_id,
+    mitre_subid,
+    tactic,
+    technique,
+    process_name,
+    cmd_line,
+    process_filter,
+    hunt_rule,
+    subtechnique,
+    mitre_link,
+    noise_level
+order by instances desc, tactic, technique, mitre_id, mitre_subid, process_name
