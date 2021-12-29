@@ -1,0 +1,43 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/remote-desktop-terminal-services---query-server-for-brute-force-logins-and-geolocate-where-those-logins-are-coming-from
+
+RDP Detailed Query | Query used to get all RDP and other login types and usernames from three different event logs
+
+############ 
+
+SELECT datetime, eventid, 'TS Remote' AS Source,
+JSON_EXTRACT(data, '$.UserData.Param1') AS Account,
+JSON_EXTRACT(data, '$.UserData.Param2') AS Source_Machine_Network,
+JSON_EXTRACT(data, '$.UserData.Param3') AS Source_IP,
+'-' AS Process_Name,
+'-' AS Logon_Type,
+'-' AS User_SID,
+'-' AS SessionID,
+'-' AS Session_ID
+FROM sophos_windows_events
+WHERE source = 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational' and eventid = 1149
+UNION ALL
+SELECT datetime, eventid, 'Security' AS Source,
+JSON_EXTRACT(data, '$.EventData.TargetUserName') AS Account,
+JSON_EXTRACT(data, '$.EventData.WorkstationName') AS Source_Machine_Network,
+JSON_EXTRACT(data, '$.EventData.IpAddress') AS Source_IP,
+JSON_EXTRACT(data, '$.EventData.ProcessName') AS Process_Name,
+JSON_EXTRACT(data, '$.EventData.LogonType') AS Logon_Type,
+JSON_EXTRACT(data, '$.EventData.TargetUserSid') AS User_SID,
+'-' AS SessionID,
+'-' AS Session_ID
+FROM sophos_windows_events
+WHERE source = 'Security' and (eventid = 4624 OR eventid = 4625)
+UNION ALL
+SELECT datetime, eventid, 'TS Local' AS Source,
+JSON_EXTRACT(data, '$.UserData.User') AS Account,
+'-' AS Source_Machine_Network,
+JSON_EXTRACT(data, '$.UserData.Address') AS Source_IP,
+'-' AS Process_Name,
+'-' AS Logon_Type,
+'-' AS User_SID,
+JSON_EXTRACT(data, '$.UserData.Session') AS SessionID,
+JSON_EXTRACT(data, '$.UserData.SessionID') AS Session_ID
+FROM sophos_windows_events
+WHERE source = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational' ORDER BY datetime DESC;
