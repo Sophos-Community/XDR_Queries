@@ -1,0 +1,37 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/what-if-i-installed-after-the-breach-happened-hunting-through-windows-event-logs
+
+############ 
+
+-- DEFINE THE FOLLOWING STRING VARIABLE TYPES: 
+-- 'Data to search for', 'EventID', 'Search - Days to look back', 'Search - Window Size in Minutes', 'Source'
+-- QUERY CODE 
+
+/*********************************************************************************************\
+| This bit of code here will divide the number of days selected into smaller chunks. We are |
+| doing this so that when we search the windows events we keep the volume of data small for |
+| each search window. This allows us to stay under the watchdog limit of 250MB of run time |
+| memory for osquery. We do pay for that with a slower more CPU intensive query. The limit on |
+| CPU consumption is 30% but typically queries are terminated for memory consumption first |
+\*********************************************************************************************/
+
+WITH RECURSIVE
+   for(x) AS (
+   VALUES ( ( SELECT CAST (strftime ('%s', 'now','-$$Search - Days to look back$$ days') AS INT) ) )
+   UNION ALL
+   SELECT x+$$Search - Window Size in Minutes$$*60 FROM for WHERE x < (SELECT CAST (strftime ('%s', 'now') AS INT))
+   )
+
+/*********************************************************************************************\
+| Now that we have multiple time windows defined for our search we will searh through ALL |
+| event logs. we have to specify source as % (wildcard) so that we search all of them. If we |
+| did not specify source the table will default to just "System", "Application", "Setup" and |
+| "Security". |
+\*********************************************************************************************/
+SELECT time, datetime, source, eventid, data, provider_name, provider_guid, task, task_message, level, keywords, executing_pid, executing_tid, computer, user_id, activity_id, related_activity_id, opcode, qualifiers, version 
+FROM for 
+   LEFT JOIN sophos_windows_events ON time >= for.x and time <= for.x+$$Search - Window Size in Minutes$$*60
+WHERE source LIKE '$$Source$$' AND
+   data LIKE '%$$Data to search for$$%' AND
+   eventid LIKE '$$EventID$$';
