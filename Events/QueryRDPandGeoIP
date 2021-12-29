@@ -1,0 +1,34 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/remote-desktop-terminal-services---query-server-for-brute-force-logins-and-geolocate-where-those-logins-are-coming-from
+
+Query 2 | Open sockets and geo ip information via ipstack.com(API) |  Gets a list of all open sockets and the geo ip information of who they are talking to. 
+
+This query requires you to create a free account at ipstack.com and plug in the api key into the query.  
+
+############ 
+
+SELECT
+    spp.sophosPID,
+    p.path,
+    pos.local_port,
+    pos.remote_address,
+    pos.remote_port,
+    json_extract(curl.result,'$.continent_name') continent,
+    json_extract(curl.result,'$.country_name') country,
+    json_extract(curl.result,'$.region_name') region,
+    json_extract(curl.result,'$.city') city,
+    spp.localRep,
+    spp.globalRep,
+    spp.mlScore,
+    spp.puaScore,
+    spp.sha256
+FROM processes p
+LEFT JOIN sophos_process_properties spp
+    ON spp.pid = p.pid
+LEFT JOIN process_open_sockets pos
+    ON pos.pid = p.pid
+LEFT JOIN curl
+  ON url = 'http:' || '/' || '/' || 'api.ipstack.com/' || pos.remote_address || '?access_key=<YOURACCESSKEY>'
+  -- YOU CAN REMOVE THE <> HERE
+WHERE remote_address NOT IN ('0.0.0.0', '::', '::1', '0', '127.0.0.1') /*ignore localhost loopback addresses and placeholder addresses*/;
