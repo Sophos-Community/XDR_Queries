@@ -1,0 +1,26 @@
+
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---uac-check-and-no-need-to-re-invent-the-wheel
+
+############
+
+SELECT 
+   substr(data, 1,4) YEAR, 
+   CASE CAST(substr(data, 5,2) AS INT) 
+      WHEN 1 THEN 'January'
+      WHEN 2 THEN 'February'
+      WHEN 3 THEN 'March'
+      WHEN 4 THEN 'April'
+      WHEN 5 THEN 'May'
+      WHEN 6 THEN 'June'
+      WHEN 7 THEN 'July'
+      WHEN 8 THEN 'August'
+      WHEN 9 THEN 'September'
+      WHEN 10 THEN 'October'
+      WHEN 11 THEN 'November'
+      WHEN 12 THEN 'December'
+      ELSE 'ERROR'
+   END MONTH,
+   substr(data,7,2) 'DAY',  substr(data,10,2) || ':' || substr(data,12,2) 'HH:MM'  FROM registry
+WHERE path LIKE 'HKEY_LOCAL_MACHINE\SOFTWARE\Sophos\EndpointDefense\BackgroundScanV2\OverallLastCompletedTime'
