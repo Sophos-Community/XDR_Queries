@@ -1,0 +1,19 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/login-failed-attempts-query-for-windows
+
+############ 
+
+-- Shows failed login events for a user within the past 24 hours. 
+-- You can modify the time constraint where STRFTIME is in the snippet
+
+SELECT 
+datetime(time,'unixepoch','localtime') as 'Time', 
+eventid, 
+task_message,
+json_extract(data,'$.EventData.FailureReason')as FailureReason,
+json_extract(data,'$.EventData.TargetUserName') as UserName
+FROM sophos_windows_events
+WHERE eventid='4625' AND UserName <> '' AND time > STRFTIME('%H','NOW','24 hours');
+
+--Description of Event ID 4625 is "An account failed to log on".
