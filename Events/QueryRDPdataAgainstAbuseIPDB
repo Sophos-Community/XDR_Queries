@@ -1,0 +1,85 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/events/rdp-enrichment-with-abuseipdb-data
+
+############ 
+
+-- YOU NEED TO EDIT THIS AND ADD YOUR API KEY
+-- GO TO LINE 59 and ADD your API KEY
+
+WITH Abuse_Info AS (
+WITH De_Dup AS (
+WITH Auth_LIST AS ( SELECT 
+datetime(time,'unixepoch') date,
+json_extract(data, '$.authenticationPackageName') authPackageName,
+json_extract(data, '$.targetDomainName') domain,
+json_extract(data, '$.targetUserName') username,
+json_extract(data, '$.ipAddress') remoteAddress,
+CASE json_extract(data, '$.logonType')
+WHEN 3 THEN 'Network'
+WHEN 8 THEN 'Network ClearText'
+WHEN 10 THEN 'Remote Interactive'
+WHEN 11 THEN 'Cached Interactive'
+WHEN 12 THEN 'Cached Remote Interactive'
+END logonType,
+CASE eventType
+WHEN 4624 THEN 'Authenticated'
+ELSE CASE json_extract(data, '$.subStatus')
+WHEN '0xc000005e' THEN 'There are currently no logon servers available to service the logon request'
+WHEN '0xc0000064' THEN 'Incorrect User - User logon with misspelled or bad user account'
+WHEN '0xc000006a' THEN 'Incorrect Password - User logon with misspelled or bad password'
+WHEN '0xc000006d' THEN 'Incorrect User or Auth - This is either due to a bad username or authentication information'
+WHEN '0xc000006f' THEN 'User logon outside authorized hours'
+WHEN '0xc0000070' THEN 'User logon from unauthorized workstation'
+WHEN '0xc0000072' THEN 'Disabled - User logon to account disabled by administrator'
+WHEN '0xc000015b' THEN 'The user has not been granted the requested logon type (aka logon right) at this machine'
+WHEN '0xc0000192' THEN 'An attempt was made to logon, but the Netlogon service was not started'
+WHEN '0xc0000193' THEN 'Expired - User logon with expired account'
+WHEN '0xc0000413' THEN 'Logon Failure: The machine you are logging onto is protected by an authentication firewall. The specified account is not allowed to authenticate to the machine'
+ELSE 'UNKNOWN: ' || json_extract(data, '$.subStatus')
+END
+END result,
+eventType
+FROM sophos_winsec_journal
+WHERE eventType IN (4624, 4625)
+AND json_extract(data, '$.logonType') IN (3,8,10,11,12)
+AND json_extract(data, '$.ipAddress') NOT IN ('','-')
+AND json_extract(data, '$.targetUserName') NOT IN ('ANONYMOUS LOGON')
+AND time > strftime('%s', 'now', '-7 days')
+)
+
+-- Collect auth attempts into a group for each remote address, type of auth ect.
+SELECT 
+CAST(MIN(Date) AS TEXT) FIRST_SEEN, CAST(MAX(Date) AS TEXT) LAST_SEEN, CAST(GROUP_CONCAT(username, CHAR(10) ) AS TEXT) Username_List, count(date) Instances, remoteAddress, result, logonType, eventType
+FROM Auth_List
+GROUP BY remoteAddress, result, logonType, authPackageName, domain, eventType
+ORDER BY Instances DESC
+)
+
+-- Do the lookup from the abuseIPDB site. YOU WILL NEED YOUR OWN API KEY.
+SELECT FIRST_SEEN, LAST_SEEN, Username_List, Instances, remoteAddress, result, CAST(logonType AS TEXT) logonType, 
+CASE eventType = 4625 AND Instances > 10
+WHEN 1 THEN 
+(SELECT result FROM CURL WHERE url = 'https://api.abuseipdb.com/api/v2/check/?ipAddress='||remoteAddress||'&verbose&key='||
+-- INSERT YOUR API KEY BELOW | INCLUDE THE <> symbols when inserting but leave the start and end quotes
+'<YOUR API KEY HERE>'
+-- INSERT YOUR API KEY ABOVE | INCLUDE THE <> symbols when inserting but leave the start and end quotes
+)
+ELSE '{"data":{"abuseConfidenceScore":"Not Checked"}}'
+END Abuse_Data
+FROM De_Dup
+)
+
+SELECT FIRST_SEEN, LAST_SEEN, Username_List, Instances, 
+CAST(json_extract(Abuse_Data,'$.data.abuseConfidenceScore') AS TEXT) Abuse_Score,
+RemoteAddress, result,
+CAST(json_extract(Abuse_Data,'$.data.countryName') AS TEXT) County,
+CAST(json_extract(Abuse_Data,'$.data.reports[0].comment')||CHAR(10)||CHAR(10)||json_extract(Abuse_Data,'$.data.reports[1].comment')||CHAR(10)||CHAR(10)||
+json_extract(Abuse_Data,'$.data.reports[2].comment')||CHAR(10)||CHAR(10)||json_extract(Abuse_Data,'$.data.reports[3].comment')||CHAR(10)||CHAR(10)||
+json_extract(Abuse_Data,'$.data.reports[4].comment')||CHAR(10)||CHAR(10)||json_extract(Abuse_Data,'$.data.reports[5].comment') AS TEXT) Report_Data,
+CAST(json_extract(Abuse_Data,'$.data.domain') AS TEXT) Domain,
+CAST(json_extract(Abuse_Data,'$.data.isp') AS TEXT) ISP,
+CAST(json_extract(Abuse_Data,'$.data.isPublic') AS TEXT) Is_Public,
+CAST(json_extract(Abuse_Data,'$.data.isWhitelisted') AS TEXT) Is_Whitelisted,
+LogonType
+FROM Abuse_Info
