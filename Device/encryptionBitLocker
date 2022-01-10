@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---bitlocker
+
+############ 
+
+ select
+   drive_letter as "Drive Letter",
+   case protection_status when "1"
+      then "ENABLED"
+      else "DISABLED"
+      end "Protection Status",
+   encryption_method "Encryption Method"
+from bitlocker_info
+where drive_letter LIKE "_:"
