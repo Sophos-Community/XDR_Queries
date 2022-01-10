@@ -1,0 +1,9 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---minimum-hardware-check
+
+############ 
+
+select cpu_logical_cores, physical_memory, free_space 
+from logical_drives join system_info on 1 and boot_partition=1 
+where cpu_logical_cores < 2 or physical_memory < 4000000000 or free_space < 8000000000;
