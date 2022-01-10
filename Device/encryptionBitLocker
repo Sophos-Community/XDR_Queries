@@ -4,7 +4,7 @@ https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query--
 
 ############ 
 
- select
+select
    drive_letter as "Drive Letter",
    case protection_status when "1"
       then "ENABLED"
