@@ -1,0 +1,17 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---show-the-free-disk-space
+
+############ 
+ 
+SELECT
+   device_id Drive,
+   description,
+   boot_partition,
+   file_system,
+   printf("%.2f", (CAST (free_space AS FLOAT)/CAST(size AS FLOAT) ) * 100.0 ) || '%' Percent_Free,
+   printf("%.2f", CAST(free_space AS FLOAT)/1024.0/1024.0/1024.0) 'Free_Space(GB)',
+   printf("%.2f", CAST(size AS FLOAT)/1024.0/1024.0/1024.0) 'Size(GB)',
+   type
+FROM
+   logical_drives;
