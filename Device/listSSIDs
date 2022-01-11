@@ -4,4 +4,4 @@ https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query--
 
 ############ 
 
- select data as SSIDs from registry where path like 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles\%\Description';
+select data as SSIDs from registry where path like 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles\%\Description';
