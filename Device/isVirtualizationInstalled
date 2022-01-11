@@ -1,0 +1,10 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---virtual-devices
+
+############ 
+
+select id.mac, id.description, id.manufacturer, id.service, id.dhcp_server, id.dns_host_name, ia.address as ipaddress
+from interface_details as id
+join interface_addresses as ia on ia.interface=id.interface
+where id.description like '%VirtualBox%' or id.description like '%VMware%';
