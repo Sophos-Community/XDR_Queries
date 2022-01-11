@@ -1,0 +1,12 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---general-it-queries
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- 'process'
+
+select datetime(processstarttime,'unixepoch') ProcessStartTime, cmdline 
+from sophos_process_journal 
+where cmdline like '%$$process$$%' and processstarttime > strftime('%s','now','-48 hours')
