@@ -1,0 +1,20 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/sophos-reboot-required
+
+############ 
+
+WITH RebootEvidence(evidence) AS (
+    SELECT
+        CAST(group_concat(path, CHAR(10)) AS TEXT)
+    FROM
+        registry
+    WHERE 
+        path = 'HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\VolatileFlags\RebootRequired'
+        AND data = '1'
+)        
+SELECT
+    'Yes' rebootPending,
+    evidence
+FROM RebootEvidence
+WHERE evidence != ''
