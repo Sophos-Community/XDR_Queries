@@ -1,0 +1,29 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---cpu-usage-weighted
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE
+-- 'Number of Processes to Show'
+
+SELECT
+   p.name AS Name,
+   p.pid AS ProcessID,
+   p.uid,
+   u.username AS Username,
+   printf("%.2f", ((p.user_time + p.system_time) / (process_cpu_time.total_cpu_usage)) * 100) || "%" AS CPU_Percentage_Weighted
+FROM
+   processes p,
+   (
+    SELECT
+      (SUM(user_time) + SUM(system_time) * 1.0) AS total_cpu_usage
+    FROM
+      processes
+   ) AS process_cpu_time
+JOIN
+ users u
+ ON
+   p.uid = u.uid
+ORDER BY p.user_time+p.system_time DESC
+LIMIT "$$Number of Processes to Show$$";
