@@ -1,0 +1,42 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/generic-network-activity-search-windows
+
+############ 
+
+--DEFINE THE FOLLOWING VARIABLES
+
+-- VARIABLE:   $$Begin Search on date$$       DATE
+-- VARIABLE:   $$Hours to Search$$            STRING
+-- VARIABLE:   $$IP_Address$$                 STRING
+-- VARIABLE:   $$Port$$                       STRING
+-- VARIABLE:   $$Process Name$$               STRING
+-- VARIABLE:   $$User Name$$                  STRING
+
+-- In order to avoid the watchdog on the device, we will query the journals in in 1 hour chunks (3600 seconds)
+WITH RECURSIVE
+	Time_Interval(x) AS (
+		VALUES ( CAST($$Begin Search on date$$ AS INT) )
+		UNION ALL
+		SELECT x+3600 FROM Time_Interval WHERE x <= CAST($$Begin Search on date$$ AS INT) + CAST( $$Hours to Search$$ * 3600 AS INT)
+	)
+-- Collect a list of processes that refrence the desired IP and PORT information
+SELECT
+   CAST((SELECT processname FROM sophos_process_journal spj WHERE spj.sophosPID = spa.sophosPid LIMIT 1) AS TEXT) processname,
+   CAST((SELECT u.username FROM sophos_process_journal spj JOIN users u ON u.uuid = spj.sid WHERE spj.sophosPID = spa.sophosPID LIMIT 1) AS TEXT) Username,
+   CAST(REPLACE(DATETIME(time,'unixepoch'),' ','T') AS TEXT) time, 
+   source, 
+   sourceport, 
+   destination, 
+   destinationport, 
+   sophosPid, 
+   subject, 
+   originalDestination, 
+   originalDestinationPort
+FROM Time_Interval t 
+  LEFT JOIN Sophos_process_activity spa ON time > t.x AND time < t.x+3600 AND subject IN ('Http','Network','Ip')
+WHERE 
+   (source LIKE CAST('$$IP_Address$$' AS TEXT) OR destination LIKE CAST('$$IP_Address$$' AS TEXT) OR originalDestination LIKE CAST('$$IP_Address$$' AS TEXT) ) AND 
+   (sourcePort LIKE CAST('$$Port$$' AS TEXT) OR destinationPort LIKE CAST('$$Port$$' AS TEXT) OR originalDestinationPort LIKE CAST('$$Port$$' AS TEXT) ) AND
+   LOWER(pathname) LIKE LOWER('%$$Process Name$$%') AND
+   LOWER(username) LIKE LOWER('%$$User Name$$%')
