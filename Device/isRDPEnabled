@@ -1,0 +1,14 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/simple-query-to-audit-microsoft-rdp-enablement-status-from-registry
+
+############ 
+
+SELECT
+CASE
+WHEN data = 0 then 'RDP Enabled'
+WHEN data = 1 then 'RDP Disabled'
+ELSE 'Error'
+END AS 'RDP state'
+FROM registry where key = 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Terminal Server\' AND name = 'fDenyTSConnections'
+--AND data = '0'
