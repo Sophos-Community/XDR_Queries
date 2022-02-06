@@ -4,12 +4,22 @@ https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query--
 
 ############ 
 
-select
-   drive_letter as "Drive Letter",
-   case protection_status when "1"
-      then "ENABLED"
-      else "DISABLED"
-      end "Protection Status",
-   encryption_method "Encryption Method"
-from bitlocker_info
-where drive_letter LIKE "_:"
+SELECT device_id,drive_letter,percentage_encrypted, encryption_method, version, persistent_volume_id,
+   CASE conversion_status
+      WHEN 1 THEN 'Fully Encrypted'
+      WHEN 2 THEN 'Encryption In Progress'
+      WHEN 3 THEN 'Decryption In Progress'
+      WHEN 4 THEN 'Encryption Paused'
+      WHEN 5 THEN 'Decryption Paused'
+      ELSE 'Fully Decrypted'
+   END conversion_status,
+   CASE protection_status
+      WHEN 0 THEN 'Protection Off'
+      WHEN 1 THEN 'Protection On'
+      ELSE 'Unknown'
+   END protection_status,
+   CASE lock_status
+      WHEN 0 THEN 'Unlocked'
+      WHEN 1 THEN 'Locked'
+   END lock_status
+FROM bitlocker_info;
