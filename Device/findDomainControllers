@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/find-domain-controllers
+
+############ 
+
+SELECT
+os_version.name os_name,
+services.name,
+services.display_name,
+services.start_type,
+services.path,
+services.status,
+services.user_account
+FROM services JOIN os_version
+WHERE services.name = 'NTDS'
