@@ -1,0 +1,8 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/check-for-conflicting-windows-security-software
+
+############
+
+SELECT * FROM windows_security_products 
+WHERE name not like '%Sophos%' AND name <> 'Windows Firewall' AND (name not like '%Defender%' AND state = 'Off') 
