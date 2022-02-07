@@ -1,0 +1,9 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/gather-system-information
+
+############ 
+
+SELECT
+uuid, hardware_serial, hostname, cpu_subtype, cpu_brand, printf("%.2f", CAST(system_info.physical_memory AS FLOAT)/1024.0/1024.0/1024.0) 'Memory(GB)', hardware_vendor, hardware_model
+FROM system_info;
