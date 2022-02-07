@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/compare-specific-product-version
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES: 
+-- 'Version'
+-- 'Name'
+
+SELECT name, version, publisher,
+CASE
+     WHEN version >= '$$Version$$' THEN 'Software is updated'
+     WHEN version < '$$Version$$' THEN 'Software is outdated'
+END AS Status 
+FROM programs WHERE name = '$$Name$$'
