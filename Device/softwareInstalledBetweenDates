@@ -1,0 +1,18 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/list-software-installed-between-two-dates
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES:
+-- 'EndDate'
+-- 'StartDate'
+
+SELECT name, version, publisher, install_date,
+install_location AS 'Install Path'
+FROM Programs
+WHERE NAME NOT LIKE 'Sophos%'
+OR install_date = ''
+AND install_date >= '$$StartDate$$'
+AND install_date <= '$$EndDate$$'
+ORDER BY install_date DESC
