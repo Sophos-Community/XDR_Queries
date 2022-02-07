@@ -1,0 +1,23 @@
+##### SOPHOS COMMUNITY POST #####
+
+
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- 'Expiration in N Days'
+
+SELECT
+   datetime(not_valid_after,'unixepoch') Expiration_date,
+   CAST((not_valid_after - strftime('%s','Now'))/86400 + 0.9  AS INT) Days_to_expiration,
+   store,
+   store_location,
+   username,
+   common_name,
+   subject,
+   issuer,
+   path,
+   datetime(not_valid_before, 'unixepoch') Not_Valid_Before
+FROM certificates
+WHERE not_valid_after < $$Expiration in N Days$$ * 86400 + strftime('%s','now') AND not_valid_after > strftime('%s','now','-7 days')
+ORDER by Days_to_expiration DESC
