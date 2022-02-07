@@ -1,0 +1,52 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/check-version-of-notepad-installed-vs-latest-available
+
+############ 
+
+select
+	version as Current,
+	(
+		select
+			substr(
+				result,(
+					(
+						select
+							instr(result, 'Current Version ')
+						from
+							curl
+						where
+							url = 'https:' || '/' || '/' || 'notepad-plus-plus.org'
+					) + 16
+				),
+				5
+			) as Latest
+		from
+			curl
+		where
+			url = 'https:' || '/' || '/' || 'notepad-plus-plus.org'
+	) as Latest
+from
+	programs
+where
+	name like '%notepad++%'
+	and version < (
+		select
+			substr(
+				result,(
+					(
+						select
+							instr(result, 'Current Version ')
+						from
+							curl
+						where
+							url = 'https:' || '/' || '/' || 'notepad-plus-plus.org'
+					) + 21
+				),
+				6
+			) as Latest
+		from
+			curl
+		where
+			url = 'https:' || '/' || '/' || 'notepad-plus-plus.org'
+	)
