@@ -1,0 +1,10 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/query-trusted-root-certs
+
+############ 
+
+SELECT common_name, issuer, strftime('%d/%m/%Y', datetime(not_valid_after, 'unixepoch')) as expiration_date
+FROM certificates
+WHERE path = 'CurrentUser\Trusted Root Certification Authorities'
+ORDER BY common_name
