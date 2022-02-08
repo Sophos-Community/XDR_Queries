@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/query-for-applications-that-auto-start
+
+############ 
+
+SELECT
+name as 'Key Name',
+source as 'Start Up source',
+path as 'Path',
+args as 'Aruments',
+username as 'Owner',
+status as 'Status'
+FROM startup_items
+ORDER by status
