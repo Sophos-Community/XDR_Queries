@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/add-username-to-windows-programs-query
+
+############ 
+
+SELECT 
+  swe.datetime,
+  REPLACE(REPLACE(json_extract(data,'$.EventData.Data'),'(NULL)',''),',','') Program_Name,
+  users.username,
+  swe.user_id
+FROM 
+  sophos_windows_events swe JOIN users ON swe.user_id = users.uuid
+WHERE
+  swe.provider_name = 'MsiInstaller' 
+  AND swe.eventid IN (1033,11707)
