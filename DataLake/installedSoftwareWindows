@@ -1,1 +1,8 @@
+##### SOPHOS COMMUNITY POST #####
 
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/list-of-installed-software
+
+############ 
+
+SELECT meta_hostname AS Hostname, name AS Software_Title, MAX(version) AS Version 
+FROM xdr_data WHERE query_name = 'windows_programs' GROUP BY name, meta_hostname ORDER BY meta_hostname, name
