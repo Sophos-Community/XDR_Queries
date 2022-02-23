@@ -1,0 +1,26 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/examine-for-a-specific-driver-vendor-type-and-version?
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- 'name'
+
+SELECT
+    device_name,
+    device_id,
+    service,
+    image,
+    service_key,
+    version,
+    inf,
+    class,
+    provider,
+    manufacturer,
+    driver_key,
+    date,
+    signed
+FROM drivers
+WHERE provider LIKE '$$name$$' OR manufacturer LIKE '$$name$$'
+ORDER BY device_name = "", device_name, device_id ASC
