@@ -1,0 +1,24 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query-to-see-the-versions-of-any-software-installed-on-macos
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- 'programName'
+
+SELECT 
+   name,
+   path,
+   bundle_executable,
+   bundle_identifier,
+   bundle_name,
+   bundle_short_version,
+   bundle_version,
+   display_name
+FROM
+   apps
+WHERE 
+   name LIKE '%$$programName$$%'
+OR bundle_executable LIKE '%$$programName$$%'
+OR bundle_name LIKE '%$$programName$$%'
