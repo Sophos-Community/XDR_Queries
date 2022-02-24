@@ -1,0 +1,23 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/windows-pcs-inventory-asset-discovery-info
+
+############ 
+
+SELECT
+/*User section*/
+logged_in_users.user User_Name,
+/*System Info*/
+system_info.cpu_brand,
+system_info.cpu_type,
+system_info.physical_memory,
+system_info.hardware_vendor,
+system_info.hardware_model,
+system_info.hardware_serial,
+/*OS info*/
+os_version.name os_name,
+os_version.version os_version,
+os_version.build os_build,
+os_version.arch os_arch
+FROM system_info JOIN os_version
+JOIN logged_in_users
