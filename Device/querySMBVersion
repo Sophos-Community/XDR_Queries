@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/query-smb-version-as-case-statement
+
+############ 
+
+SELECT name, type, key, data,
+CASE
+WHEN (name = 'SMB1' AND data = 1) THEN 'SMB Version 1'
+WHEN (name = 'SMB2' AND data = 1) THEN 'SMB Version 2'
+WHEN (name = 'SMB3' AND data = 1) THEN 'SMB Version 3'
+ELSE 'SMB is not enabled'
+END AS SMB_Version
+FROM registry WHERE path LIKE 'HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters\%'
+AND name LIKE 'SMB%'
