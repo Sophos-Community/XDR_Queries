@@ -1,20 +1,24 @@
 ##### SOPHOS COMMUNITY POST #####
 
-https://community.sophos.com/intercept-x-endpoint/i/device/sophos-reboot-required
+https://community.sophos.com/intercept-x-endpoint/i/device/query-sophos-agent-needing-reboot
 
 ############ 
 
-WITH RebootEvidence(evidence) AS (
-    SELECT
-        CAST(group_concat(path, CHAR(10)) AS TEXT)
-    FROM
-        registry
-    WHERE 
-        path = 'HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\VolatileFlags\RebootRequired'
-        AND data = '1'
-)        
-SELECT
-    'Yes' rebootPending,
-    evidence
-FROM RebootEvidence
-WHERE evidence != ''
+WITH rebootRequired AS (SELECT
+   CASE
+      WHEN data LIKE '1' THEN 'Yes'
+      ELSE 'No'
+   END AS RebootRequired
+FROM registry 
+WHERE path LIKE 'HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\VolatileFlags\RebootRequired'),
+
+rebootRequiredDate AS (SELECT datetime(CAST(data AS unsigned_bigint)/1000,'unixepoch','localtime') AS RequiredSince
+FROM registry 
+WHERE path LIKE 'HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\VolatileFlags\RebootRequiredSince')
+
+SELECT RebootRequired,
+   CASE
+      WHEN RebootRequired  = 'No' THEN 'n/a'
+      ELSE RequiredSince
+      END AS rebootRequiredDate
+FROM rebootRequired JOIN rebootRequiredDate
