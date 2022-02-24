@@ -1,0 +1,20 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/query-powershell-version
+
+############ 
+
+SELECT name, type, key, data,
+CASE
+WHEN data LIKE '1.%' THEN 'PS Version 1'
+WHEN data LIKE '2.%' THEN 'PS Version 2'
+WHEN data LIKE '3.%' THEN 'PS Version 3'
+WHEN data LIKE '4.%' THEN 'PS Version 4'
+WHEN data LIKE '5.0%' THEN 'PS Version 5'
+WHEN data LIKE '5.1%' THEN 'PS Version 5.1'
+WHEN data LIKE '6.%' THEN 'PS Version 6'
+WHEN data LIKE '7.0%' THEN 'PS Version 7'
+WHEN data LIKE '7.1%' THEN 'PS Version 7.1'
+ELSE 'PS Version'
+END AS PS_Version
+FROM registry WHERE path LIKE 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PowerShell\3\PowerShellEngine\PowerShellVersion'
