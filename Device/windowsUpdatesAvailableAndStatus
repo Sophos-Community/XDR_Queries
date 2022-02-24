@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-how-to-check-windows-updates-available-or-not-installed?CommentId=371c96fe-000a-4927-af7f-f9b8a57a88a7
+
+############ 
+
+SELECT
+    title,
+    support_url,
+    msrc_severity,
+    installed,
+    mandatory,
+    size,
+    kbarticle
+FROM
+    win_update
