@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/search-for-windows-systems-missing-a-specific-patch
+
+############ 
+
+select DISTINCT meta_hostname
+from
+xdr_data
+where
+meta_os_platform = 'windows'
+AND
+meta_hostname NOT IN (select meta_hostname from xdr_data where query_name = 'windows_updates_patch' AND meta_os_platform = 'windows' AND hotfix_id = '$$kbnum$$')
+AND
+to_unixtime(ingestion_timestamp) > to_unixtime(date_add('day', - 30, now()))
