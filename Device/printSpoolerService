@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/find-machines-with-running-print-spooler-service
+
+############ 
+
+SELECT  name, display_name, start_type, path, status, user_account,
+       CASE
+       WHEN status = 'RUNNING' THEN 'Stop service to end exposure to unpatched vulnerabilities inc. Print Nightmare'
+       END AS SpoolerCheck,
+       CASE
+       WHEN start_type != 'Disabled' THEN 'Set Spooler service to DISABLED to prevent it from starting'
+       END AS ServiceCheck
+FROM services
+WHERE name = 'Spooler' AND (status = 'RUNNING' OR start_type != 'DISABLED')
