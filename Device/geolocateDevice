@@ -1,0 +1,14 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/geolocate-device
+
+############ 
+
+SELECT
+json_extract(curl.result,'$.ip') IP_Address,
+json_extract(curl.result,'$.city') City,
+json_extract(curl.result,'$.region') State,
+json_extract(curl.result,'$.latitude') Latitude,
+json_extract(curl.result,'$.longitude') Longitude
+FROM curl
+WHERE url = 'http:' || '/' || '/' || 'ipapi.co/' || (SELECT result FROM curl WHERE url = 'http:' || '/' || '/' || 'ifconfig.me/ip') || '/' || 'json'
