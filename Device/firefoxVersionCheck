@@ -1,0 +1,52 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/check-version-of-firefox-installed-vs-latest-available
+
+############ 
+
+select
+  version as Current,
+  (
+    select
+      substr(
+        result,(
+          (
+            select
+              instr(result, 'data-latest-firefox=')
+            from
+              curl
+            where
+              url = 'https:' || '/' || '/' || 'www.mozilla.org/en-US/firefox/new/'
+          ) + 21
+        ),
+        6
+      ) as Latest
+    from
+      curl
+    where
+      url = 'https:' || '/' || '/' || 'www.mozilla.org/en-US/firefox/new/'
+  ) as Latest
+from
+  programs
+where
+  name like '%firefox%'
+  and version < (
+    select
+      substr(
+        result,(
+          (
+            select
+              instr(result, 'data-latest-firefox=')
+            from
+              curl
+            where
+              url = 'https:' || '/' || '/' || 'www.mozilla.org/en-US/firefox/new/'
+          ) + 21
+        ),
+        6
+      ) as Latest
+    from
+      curl
+    where
+      url = 'https:' || '/' || '/' || 'www.mozilla.org/en-US/firefox/new/'
+  )
