@@ -1,0 +1,24 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/finding-the-sophos-machine-id
+
+############ 
+
+SELECT
+    CASE type
+        WHEN 'subkey' THEN path
+        ELSE rtrim(path, replace(path, '\', ''))
+    END keyPath,
+    CASE type
+        WHEN 'subkey' THEN ''
+        ELSE name
+    END valueName,
+    CASE type
+        WHEN 'subkey' THEN ''
+        ELSE type
+    END valueType,
+    data valueData,
+    datetime(mtime,'unixepoch') lastTimeModified
+FROM registry
+WHERE (path LIKE 'HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\SavService\Application\SavMachineId')
+ORDER BY keyPath ASC 
