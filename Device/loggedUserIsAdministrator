@@ -1,0 +1,11 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/live-discover-query---uac-check-and-no-need-to-re-invent-the-wheel
+
+############ 
+
+select count(*) 'Number of Console logged on admins' 
+from logged_in_users as liu join users as u on u.username=liu.user 
+join user_groups as ug on ug.uid=u.uid 
+join groups as g on g.gid = ug.gid 
+where liu.tty='Console' and g.groupname='Administrators';
