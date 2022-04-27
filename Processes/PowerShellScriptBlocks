@@ -1,0 +1,21 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/threat-hunting---powershell-script-blocks
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES
+-- startTime
+-- endTime
+
+SELECT 
+   *
+FROM 
+   sophos_powershell_events spe
+WHERE 
+   time > $$startTime$$ AND time < $$endTime$$
+   AND script_text NOT LIKE '%Set-Location%'
+   AND script_text NOT LIKE '%Set-StrictMode%'
+   AND script_text NOT LIKE 'prompt'
+   AND script_text NOT LIKE '%System.Management.ManagementDateTimeConverter%'
+   AND script_text NOT LIKE '$this.Runspace%'
