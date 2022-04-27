@@ -1,0 +1,31 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/process-http-calls
+
+############ 
+
+SELECT
+sophos_http_journal.PID,
+sophos_http_journal.PID,
+datetime(sophos_http_journal.time,'unixepoch','localtime') AS LocalTimeStamp,
+datetime(sophos_http_journal.processStartTime,'unixepoch','localtime') AS processStartTime,
+sophos_http_journal.source,
+sophos_http_journal.sourcePort,
+sophos_http_journal.destination,
+sophos_http_journal.destinationPort,
+sophos_http_journal.url,
+sophos_http_journal.headers AS Command,
+processes.pid,
+processes.name,
+processes.path,
+processes.cmdline,
+processes.state,
+processes.cwd,
+processes.root,
+processes.on_disk,
+processes.elevated_token
+FROM
+sophos_http_journal
+INNER JOIN processes
+ON
+sophos_http_journal.PID = processes.pid
