@@ -1,0 +1,37 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/find-endpoints-with-outdated-updated-software-installed
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+--  $$URL$$ 
+
+ -- LOAD CSV from GIT LOCATION AND CHECK IF THE APPLICATION IS PRESENT OR NOT
+WITH
+Remote_CSV_file(Line, str) AS (
+SELECT '', (SELECT result from curl where url = '$$URL$$') ||char(10)
+UNION ALL
+SELECT substr(str, 0, instr(str, char(10) )), substr(str, instr(str, char(10) )+1) FROM Remote_CSV_file WHERE str!=''
+),
+
+-- Create Table for Remote_CSV_file
+Remote_Loaded_Table (Col1, Col2, Col3, Col4, Col5, Col6) AS (
+SELECT SPLIT(Line,',',0) Col1, SPLIT(Line,',',1) Col2, SPLIT(Line,',',2) Col3, SPLIT(Line,',',3) Col4, SPLIT(Line,',',4) Col5, SPLIT(Line,',',5) Col6
+FROM Remote_CSV_file WHERE Line != ''
+)
+
+-- CHECK IF THE PROGRAM IS PRESENT OR NOT
+SELECT
+CASE WHEN p.name > '' THEN 'FOUND' ELSE 'NOT FOUND' END App_Found_OR_Not,
+RF.Col1,
+RF.Col2,
+RF.Col3,
+RF.Col4,
+RF.Col5
+FROM Remote_Loaded_Table RF
+LEFT JOIN programs P ON
+RF.Col1 LIKE P.name
+AND RF.Col2 LIKE P.version
+AND RF.Col3 LIKE P.publisher
+ORDER BY App_Found_OR_Not DESC
