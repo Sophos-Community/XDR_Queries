@@ -1,0 +1,36 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/find-endpoints-with-outdated-updated-software-installed
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- $$File Path$$
+
+-- LOAD Allowed/NOT ALLOWED Application List
+WITH
+
+-- LOAD CSV from LOCAL SYSTEM
+Local_CSV_file AS (
+SELECT line FROM grep WHERE pattern = ',' AND path = '$$File Path$$'
+),
+-- Create Table for Local_CSV_file
+Local_Loaded_Table AS (
+SELECT SPLIT(Line,',',0) Name, SPLIT(Line,',',1) Version, SPLIT(Line,',',2) Vendor, SPLIT(Line,',',3) InstallDate, SPLIT(Line,',',4) InstallSource
+FROM Local_CSV_file WHERE Line != '' AND line NOT LIKE '%Name%version%Vendor%installDate%InstallSource%'
+)
+
+-- CHECK IF THE PROGRAM IS PRESENT OR NOT
+SELECT
+CASE WHEN p.name > '' THEN 'FOUND' ELSE 'NOT FOUND' END Status,
+LF.Name,
+LF.Version,
+LF.Vendor,
+LF.InstallDate,
+LF.InstallSource
+FROM Local_Loaded_Table LF
+LEFT JOIN programs P ON
+LF.Name LIKE P.name
+AND LF.Version LIKE P.version
+AND LF.Vendor LIKE P.publisher
+ORDER BY Status ASC
