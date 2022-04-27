@@ -1,0 +1,15 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/decode-encoded-powershell
+
+############ 
+
+WITH RECURSIVE test(c,cur) AS (
+   select '', (replace(hex(from_base64('$$Base64 Encoded data$$') ),'00','') ) 
+      UNION ALL
+   select c || char((case substr(cur,1,1) when 'A' then 10 when 'B' then 11 when 'C' then 12 when 'D' then 13 when 'E' then 14 when 'F' then 15 else substr(cur,1,1) end)*16 +
+                    (case substr(cur,2,1) when 'A' then 10 when 'B' then 11 when 'C' then 12 when 'D' then 13 when 'E' then 14 when 'F' then 15 else substr(cur,2,1) end)), substr(cur,3)
+   FROM test where length(cur)>0
+   )
+SELECT c Decoded_value FROM test 
+WHERE length (cur) = 0
