@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/query---are-any-sophos-services-not-running
+
+############ 
+
+SELECT
+   name,
+   display_name,
+   start_type,
+   path,
+   status,
+   user_account
+FROM services
+WHERE (path like '%sophos%' or path like '%hitman%')
+   AND status <> 'RUNNING';
