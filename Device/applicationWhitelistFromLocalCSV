@@ -1,0 +1,33 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/application-whitelist
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+--  $$File Path$$
+
+WITH
+    -- LOAD CSV from LOCAL SYSTEM
+    Local_CSV_file AS (
+        SELECT line FROM grep WHERE pattern = ',' AND path = '$$File Path$$'
+    ),
+    -- Create Table for Local_CSV_file
+    Application_Whitelist AS (
+        SELECT SPLIT(Line,',',0) Name, SPLIT(Line,',',1) Version
+        FROM Local_CSV_file WHERE Line != ''
+        LIMIT 5
+    )
+
+SELECT 
+PL.name as Application,
+CASE WHEN EXISTS (
+         select 1
+         FROM Application_Whitelist WL
+         WHERE PL.Name = WL.name 
+      ) 
+      THEN 'Whitelisted'
+      ELSE 'Not Approved' 
+      END AS Status
+FROM programs PL
+ORDER BY Status, name;
