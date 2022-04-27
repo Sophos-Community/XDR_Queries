@@ -4,6 +4,9 @@ https://community.sophos.com/intercept-x-endpoint/i/processes/decode-encoded-pow
 
 ############ 
 
+-- DEFINE THE FOLLOWING VARIABLE:
+-- Base64 Encoded data
+
 WITH RECURSIVE test(c,cur) AS (
    select '', (replace(hex(from_base64('$$Base64 Encoded data$$') ),'00','') ) 
       UNION ALL
