@@ -1,0 +1,40 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/generic-process-search-on-windows
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES:
+-- $$IP Address to look for$$
+-- $$Start Search From$$
+-- $$Number of Hours of activity to search$$
+
+SELECT
+   strftime('%d-%m-%Y %H:%M:%S',datetime(spa.time,'unixepoch')) Date_Time,
+   spa.sophosPid,
+   replace(spp.pathname, rtrim(spp.pathname, replace(spp.pathname, '\', '')), '') process_name,
+   spa.subject,
+   spa.action,
+   spa.object,
+   spa.url,
+   spa.source,
+   spa.sourcePort,
+   spa.destination,
+   spa.destinationPort,
+   spa.originalDestination,
+   spa.originalDestinationPort,
+   spa.protocol,
+   spp.pathname,
+   spp.mlscore,
+   spp.puascore,
+   spp.globalrep,
+   spp.localrep,
+   spp.sha256
+FROM Sophos_process_activity spa
+   JOIN sophos_process_properties spp ON spp.sophosPID = spa.SophosPID
+WHERE
+   subject IN ('Http','Network','Ip') AND
+   ( source LIKE CAST('$$IP Address to look for$$' AS TEXT) OR destination LIKE CAST('$$IP Address to look for$$' AS TEXT) ) AND
+   time > $$Start Search From$$ AND
+   time < $$Start Search From$$ + $$Number of Hours of activity to search$$ * 3600 AND
+   spa.sourceport NOT IN (137,138,139) AND spa.destinationPort NOT IN (137,138,139);
