@@ -1,0 +1,33 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discovery-query---sophospid-process-activity-digest
+
+############ 
+
+ -- DEFINE THE FOLLOWING VARIABLES:
+ -- Begin collection N Minutes after process start
+ -- Number of minutes of activity to collect
+ -- SophosPID
+
+WITH Target_process(process_name, process_cmdLine)
+   AS (
+      SELECT replace(spj.pathname, rtrim(spj.pathname, replace(spj.pathname, '\', '')), '') process_name, spj.cmdline process_cmdline
+      FROM sophos_process_journal spj WHERE spj.SophosPID = CAST ('$$SophosPID$$' AS TEXT) AND
+         time = replace('$$SophosPID$$', rtrim('$$SophosPID$$', replace('$$SophosPID$$', ':', '')), '') / 10000000 - 11644473600
+      LIMIT 1)
+
+SELECT
+   subject,
+   DateTime(time,'Unixepoch') Time_of_activity,
+   Target_process.process_name,
+   Target_process.process_cmdline,
+   action,
+   replace(object, rtrim(object, replace(object, '\', '')), '') Object_name,
+   object Object_Path, fileid File_ID, pathname, filesize, targetpathname, url, source, sourcePort, destination, destinationPort, protocol, targetSophosPID, cmdLine, keyname, valuename, value, sophosTID
+FROM sophos_process_activity JOIN Target_process
+WHERE SophosPID = '$$SophosPID$$' AND
+   time > replace('$$SophosPID$$', rtrim('$$SophosPID$$', replace('$$SophosPID$$', ':', '')), '') / 10000000 - 11644473600
+      + CAST ('$$Begin collection N Minutes after process start$$' AS INT) AND
+   time < replace('$$SophosPID$$', rtrim('$$SophosPID$$', replace('$$SophosPID$$', ':', '')), '') / 10000000 - 11644473600
+      + CAST ('$$Begin collection N Minutes after process start$$' AS INT)
+      + CAST ('$$Number of minutes of activity to collect$$' AS INT)
