@@ -1,0 +1,7 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-query---living-off-the-land-bits
+
+############
+
+select cmdline from sophos_process_journal where (cmdline like '%bitsadmin%/create%') or (cmdline like '%bitsadmin%/addfile%') or (cmdline like '%BitsTransfer%')
