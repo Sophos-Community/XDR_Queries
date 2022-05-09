@@ -1,0 +1,26 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-query-all-system-activity-for-n-seconds-from-a-date-time
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES:
+-- $$Monitor start period$$
+-- $$Seconds of activity$$
+
+SELECT
+   spa.sophosPID,
+   spa.subject,
+   DateTime(spa.time,'Unixepoch') Time_of_activity,
+   replace(spj.pathname, rtrim(spj.pathname, replace(spj.pathname, '\', '')), '') process_name,
+   spj.cmdline command_line,
+   spa.action,
+   replace(spa.object, rtrim(spa.object, replace(spa.object, '\', '')), '') Object_name,
+   spa.object Object_Path, spa.fileid File_ID, spa.pathname, spa.filesize, spa.targetpathname, spa.url, spa.source, spa.sourcePort, spa.destination, spa.destinationPort, spa.protocol,
+   spa.targetSophosPID, spa.cmdLine, spa.keyname, spa.valuename, spa.value, spa.sophosTID
+FROM sophos_process_activity spa
+   LEFT JOIN sophos_process_journal spj ON spj.SophosPID = spa.SophosPID AND
+      spj.time = replace(spa.SophosPID, rtrim(spa.SophosPID, replace(spa.SophosPID, ':', '')), '') / 10000000 - 11644473600
+WHERE
+   spa.time >= '$$Monitor start period$$' AND
+   spa.time <= '$$Monitor start period$$' + CAST ('$$Seconds of activity$$' AS INT) ;
