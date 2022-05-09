@@ -1,0 +1,52 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/generic-process-search-on-windows
+
+############
+
+-- DEFINE THE FOLLOWING VARIABLES:
+--$$Begin Search on date$$                  DATE
+--$$Hours to Search$$                       STRING
+--$$command line$$                          STRING
+--$$process name$$                          STRING
+--$$parent process name$$                   STRING
+--$$user name$$                             STRING
+
+WITH RECURSIVE
+	Time_Interval(x) AS (
+		VALUES ( CAST($$Begin Search on date$$ AS INT) )
+		UNION ALL
+		SELECT x+14400 FROM Time_Interval WHERE x < CAST($$Begin Search on date$$ AS INT) + CAST( $$Hours to Search$$ * 3600 AS INT)
+	)
+	
+SELECT 
+   CAST( replace(datetime(spj.time,'unixepoch'),' ','T') AS TEXT)Date_Time, -- add the T to help excel understand this is a date and time
+   CAST( users.username AS TEXT) User_Name,
+   CAST( (SELECT processname FROM sophos_process_journal spj2 WHERE spj2.sophosPID = spj.parentSophosPID) AS TEXT) Parent_Process_Name,
+   CAST( spj.processname AS TEXT) Process_Name,
+   CAST( spj.cmdline AS TEXT) CmdLine,
+   
+   -- SHOW a pretty bar whre the size depends on the execution duration  Duration bar is a sqrt function based on execution time
+   CASE CAST( (CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END)/15 AS INT)
+      WHEN 0 THEN '│'
+      ELSE printf('%.' || CAST(CAST(SQRT(CAST( CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END AS INT)/15) AS INT) AS TEXT) ||'c', '█')
+   END Execution_Duration,
+   
+   CAST( CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END AS TEXT) Seconds,
+   CAST( spj.sophosPid AS TEXT) SophosPID,
+   CAST( spj.parentSophosPID AS TEXT) Parent_SophosPID,
+   CAST( spj.SHA256 AS TEXT) SHA256,
+   CAST( CASE spj.eventType WHEN 0 THEN 'Process Running' ELSE 'Process Stopped' END AS TEXT)ProcessStatus,
+   CAST( spj.pathname AS TEXT) PathName
+FROM Time_Interval t 
+   LEFT JOIN sophos_process_journal spj ON  spj.time > t.x AND spj.time < t.x+14400
+   LEFT JOIN users ON uuid LIKE sid
+WHERE 
+   -- SEARCH AND FILTER CRITERIA
+   LOWER(spj.cmdline) LIKE LOWER('%$$command line$$%') AND 
+   LOWER(users.username) LIKE LOWER('%$$user name$$%') AND
+   LOWER(spj.processname) LIKE LOWER('%$$process name$$%') AND
+   LOWER(Parent_Process_Name) LIKE LOWER('%$$parent process name$$%')
+GROUP BY SophosPID
+
+ 
