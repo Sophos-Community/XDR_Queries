@@ -1,0 +1,7 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-query---sysinternals
+
+############ 
+
+ select r.name, r.path, datetime(mtime,'unixepoch') as ModifiedTime from registry as r where r.key like 'HKEY_USERS\%\SOFTWARE\Sysinternals'
