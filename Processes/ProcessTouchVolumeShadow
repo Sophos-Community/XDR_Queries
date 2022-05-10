@@ -1,0 +1,28 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/process-that-writes-on-shadow-copy-space
+
+############ 
+
+SELECT 
+   datetime(sfj.time,'unixepoch') Date_Time,
+   (SELECT spj.pathname FROM sophos_process_Journal spj WHERE spj.sophosPID = sfj.sophosPID ) Process_Pathname,
+   sfj.subject,
+   CASE sfj.eventType
+      WHEN 0 THEN 'created'
+      WHEN 1 THEN 'renamed'
+      WHEN 2 THEN 'deleted'
+      WHEN 3 THEN 'modified'
+      WHEN 4 THEN 'hardLinkCreated'
+      WHEN 5 THEN 'timestampsModified'
+      WHEN 6 THEN 'permissionsModified'
+      WHEN 7 THEN 'ownershipModified'
+      WHEN 8 THEN 'accessed'
+      WHEN 9 THEN 'binaryFileMapped'
+      ELSE 'UNKNOWN: ' || CAST (sfj.eventType AS TEXT)
+   END EventType,
+   sfj.pathname File_Pathname,
+   sfj.filesize
+FROM sophos_file_journal sfj 
+WHERE sfj.pathname LIKE 'C:\System Volume Information\%%' AND
+   sfj.time > strftime('%s','now','-1 days')
