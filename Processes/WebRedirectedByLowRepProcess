@@ -1,0 +1,11 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-query---checking-for-redirected-web-traffic-to-unknown-processes
+
+############ 
+
+select spj.pathname, spj.sha256, sfp.mlScore, sfp.localRep
+from sophos_ip_journal as ipj
+join sophos_process_journal as spj on spj.SophosPID = ipj.targetSophosPID
+join sophos_file_properties as sfp on sfp.sha256 = spj.sha256
+where ipj.redirectionState=1
