@@ -1,0 +1,12 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-query---sysinternals
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+--$$Tool$$
+
+ select sophosPID, datetime(processStartTime,'unixepoch') as ProcessStartTme, sha256, cmdline ,sid, sessionid from sophos_process_journal 
+ where sophospid in (select parentsophospid from sophos_process_journal as spj join sophos_registry_journal as srj on spj.sophospid=srj.sophospid 
+ where srj.keyname like '%\SOFTWARE\Sysinternals\$$Tool$$');
