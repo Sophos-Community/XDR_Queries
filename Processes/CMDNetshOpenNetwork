@@ -1,0 +1,8 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discovery-query---netsh---is-something-or-someone-allowing-access
+
+############ 
+ 
+select parentsophospid, sophospid, datetime(processStartTime,'unixepoch') as ProcessStartTime, cmdline 
+from sophos_process_journal where cmdline like '%netsh%action=allow%';
