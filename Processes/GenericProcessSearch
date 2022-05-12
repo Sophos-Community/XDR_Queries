@@ -5,12 +5,12 @@ https://community.sophos.com/intercept-x-endpoint/i/processes/generic-process-se
 ############
 
 -- DEFINE THE FOLLOWING VARIABLES:
---$$Begin Search on date$$                  DATE
---$$Hours to Search$$                       STRING
---$$command line$$                          STRING
---$$process name$$                          STRING
---$$parent process name$$                   STRING
---$$user name$$                             STRING
+--Begin Search on date                  DATE
+--Hours to Search                       STRING
+--command line                          STRING
+--process name                          STRING
+--parent process name                   STRING
+--user name                             STRING
 
 WITH RECURSIVE
 	Time_Interval(x) AS (
