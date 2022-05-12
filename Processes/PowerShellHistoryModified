@@ -1,0 +1,14 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover---powershell-command-audit
+
+############ 
+
+select CAST( datetime(sfj.time,'unixepoch') AS TEXT) DATE_TIME,
+sfj.subject,
+CAST( datetime(sfj.creationtime,'unixepoch') AS TEXT) CREATION_DATE_TIME,
+sfj.pathname,
+spj.cmdline,
+spj.sid
+from sophos_file_journal sfj join sophos_process_journal spj on spj.sophosPID = sfj.sophosPID
+where sfj.pathname like '%ConsoleHost_history.txt' and spj.cmdline not like '%powershell%';
