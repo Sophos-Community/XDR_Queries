@@ -5,8 +5,8 @@ https://community.sophos.com/intercept-x-endpoint/i/processes/live-discover-quer
 ############ 
 
 -- DEFINE THE FOLLOWING VARIABLES:
--- $$Monitor start period$$
--- $$Seconds of activity$$
+-- Monitor start period
+-- Seconds of activity
 
 SELECT
    spa.sophosPID,
