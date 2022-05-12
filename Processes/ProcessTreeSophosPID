@@ -1,0 +1,103 @@
+##### SOPHOS COMMUNITY POST #####
+
+Link
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- SPID
+
+SELECT *
+FROM (
+   WITH RECURSIVE Trace(SophosPID, LEVEL, parent, TIME, cmdline, sha256, pathname) AS (
+      VALUES (
+         '$$SPID$$',
+         0,
+         (SELECT ParentSophosPID FROM sophos_process_journal WHERE sophos_process_journal.SophosPID = '$$SPID$$' AND TIME = replace('$$SPID$$', rtrim('$$SPID$$', replace('$$SPID$$', ':', '')), '') / 10000000 - 11644473600),
+         (SELECT TIME FROM sophos_process_journal WHERE sophos_process_journal.SophosPID = '$$SPID$$' AND TIME = replace('$$SPID$$', rtrim('$$SPID$$', replace('$$SPID$$', ':', '')), '') / 10000000 - 11644473600),
+         0, /* not required Row is used to explain children are above */
+         0, /* not required */
+         '▬ ANCESTORS ABOVE ▬' /* Create a seperator to indicate where the target SPID is in the tree */
+         )
+
+      UNION ALL
+
+      SELECT spj.SophosPID,
+         Trace.LEVEL - 1,
+         spj.parentSophosPID,
+         spj.TIME,
+         spj.cmdline,
+         spj.sha256,
+         spj.pathname
+      FROM sophos_process_journal spj
+      JOIN Trace ON spj.SophosPID = trace.parent AND
+         spj.TIME > replace(trace.parent, rtrim(trace.parent, replace(Trace.parent, ':', '')), '') / 10000000 - 11644473600 -10 AND
+         spj.TIME < replace(trace.parent, rtrim(trace.parent, replace(Trace.parent, ':', '')), '') / 10000000 - 11644473600 +3600 AND
+         CAST (spj.endtime AS TEXT) = '0'
+      )
+   SELECT DATETIME (TIME,'unixepoch') Date_Time,
+      CASE Trace.SophosPID
+         WHEN '$$SPID$$' THEN pathname
+         ELSE substr('►►►►►►►►►►►►►►►►►►►►►►►►►', 1, (LEVEL - (SELECT LEVEL FROM trace ORDER BY LEVEL ASC LIMIT 1)) * 1) || (SELECT replace(pathname, rtrim(pathname, replace(pathname, '\', '')), ''))
+      END Process_Tree,
+      Trace.SophosPID SophosPID,
+      cmdline Cmdline,
+      sha256,
+      LEVEL
+   FROM Trace
+   ORDER BY LEVEL
+   )
+
+UNION ALL
+
+SELECT DATETIME (TIME,'unixepoch'),
+   pathname,
+   SophosPID,
+   cmdline,
+   sha256,
+   0
+FROM sophos_process_journal
+WHERE SophosPID = '$$SPID$$' AND TIME = replace('$$SPID$$', rtrim('$$SPID$$', replace('$$SPID$$', ':', '')), '') / 10000000 - 11644473600
+
+UNION ALL
+
+SELECT *
+FROM (
+   WITH RECURSIVE Trace(SophosPID, LEVEL, parent, TIME, cmdline, sha256, pathname) AS (
+      VALUES (
+         '$$SPID$$',
+         0,
+         (SELECT ParentSophosPID FROM sophos_process_journal WHERE sophos_process_journal.SophosPID = '$$SPID$$' AND TIME = replace('$$SPID$$', rtrim('$$SPID$$', replace('$$SPID$$', ':', '')), '') / 10000000 - 11644473600),
+         (SELECT TIME FROM sophos_process_journal WHERE sophos_process_journal.SophosPID = '$$SPID$$' AND TIME = replace('$$SPID$$', rtrim('$$SPID$$', replace('$$SPID$$', ':', '')), '') / 10000000 - 11644473600),
+         0, /* not required  */
+         0, /* not required  */
+         '▬ CHILDREN BELOW ▬' /* Create a seperator to indicate where the target SPID is in the tree */
+         )
+
+      UNION ALL
+
+      SELECT spj.SophosPID,
+         Trace.LEVEL + 1,
+         spj.parentsophospid,
+         spj.TIME,
+         spj.cmdline,
+         spj.sha256,
+         spj.pathname
+      FROM sophos_process_journal spj
+      JOIN Trace ON spj.parentSophosPID = trace.SophosPID AND
+         spj.TIME > replace(trace.SophosPID, rtrim(trace.SophosPID, replace(Trace.SophosPID, ':', '')), '') / 10000000 - 11644473600 -10 AND
+         spj.TIME < replace(trace.SophosPID, rtrim(trace.SophosPID, replace(Trace.SophosPID, ':', '')), '') / 10000000 - 11644473600 +3600 AND
+         CAST (spj.endtime AS TEXT) = '0'
+      ORDER BY 2 DESC
+      )
+   SELECT DATETIME (TIME,'unixepoch') Date_Time,
+      CASE Trace.SophosPID
+         WHEN '$$SPID$$' THEN substr('▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬v', 1, LEVEL * 1) || (SELECT replace(pathname, rtrim(pathname, replace(pathname, '\', '')), ''))
+         ELSE substr('►►►►►►►►►►►►►►►►►►►►►►►►►►►►►►', 1, LEVEL * 1) || (SELECT replace(pathname, rtrim(pathname, replace(pathname, '\', '')), ''))
+      END Process_Tree,
+      Trace.SophosPID SophosPID,
+      cmdline Cmdline,
+      sha256,
+      LEVEL
+   FROM Trace
+   )
