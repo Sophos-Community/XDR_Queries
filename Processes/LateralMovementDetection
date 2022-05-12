@@ -5,9 +5,9 @@ https://community.sophos.com/intercept-x-endpoint/i/processes/generic-process-se
 ############ 
 
 -- DEFINE THE FOLLOWING VARIABLES:
--- $$IP Address to look for$$
--- $$Start Search From$$
--- $$Number of Hours of activity to search$$
+-- IP Address to look for
+-- Start Search From
+-- Number of Hours of activity to search
 
 SELECT
    strftime('%d-%m-%Y %H:%M:%S',datetime(spa.time,'unixepoch')) Date_Time,
