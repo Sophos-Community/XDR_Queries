@@ -1,0 +1,55 @@
+/***************************************************
+divided 24 hours up into 10 min increments 
+This is to ensure we do not consume too much memory
+as we process the Sophos_file_journal
+****************************************************/
+
+WITH RECURSIVE
+   for(x) AS (
+      VALUES ( CAST (strftime ('%s', 'now','-5 days') AS INT) )
+      UNION ALL
+      SELECT x + 600 FROM for WHERE x < CAST (strftime ('%s', 'now') AS INT)
+)
+
+SELECT DISTINCT
+   SELECT DISTINCT username FROM users WHERE uuid = spj.sid) User,
+   datetime(sfj.time,'unixepoch') 'Date Time(UTC)',
+   replace(spj.pathname, rtrim(spj.pathname, replace(spj.pathname, '\', '')), '') process_name,
+   CASE sfj.eventType 
+      WHEN 0 THEN 'created' 
+      WHEN 1 THEN 'renamed' 
+      WHEN 2 THEN 'deleted' 
+      WHEN 3 THEN 'modified' 
+      WHEN 4 THEN 'hard link created' 
+      WHEN 5 THEN 'time stamps modified' 
+      WHEN 6 THEN 'permisions modified' 
+      WHEN 7 THEN 'ownership modified' 
+      WHEN 8 THEN 'accessed' 
+      WHEN 9 THEN 'binary file mapped' 
+      ELSE 'unknown ' || sfj.eventType
+   END Event_TYPE,
+   replace(sfj.pathname, rtrim(sfj.pathname, replace(sfj.pathname, '\', '')), '') File,
+   replace(sfj.pathname, rtrim(sfj.pathname, replace(sfj.pathname, '.', '')), '') Initial_extension,
+   replace(sfj.targetpathname, rtrim(sfj.targetpathname, replace(sfj.targetpathname, '\', '')), '') New_Name,
+   replace(sfj.targetpathname, rtrim(sfj.targetpathname, replace(sfj.targetpathname, '.', '')), '') New_extension,
+   sfj.pathname File_pathname,
+   sfj.SophosPID,
+   *
+FROM for 
+   LEFT JOIN sophos_file_journal sfj ON sfj.subject = 'FileOtherChanges' 
+      AND sfj.time > x 
+      AND sfj.time <= x + 600
+      AND sfj.eventType IN (1)
+   LEFT JOIN sophos_process_journal spj ON spj.time = sfj.processStartTime 
+   AND spj.SophosPID = sfj.SophosPID
+WHERE Initial_extension IN 
+   ('odt', 'ods', 'odp', 'odm', 'odc', 'odb', 'doc', 'docx', 'docm', 'wps', 'xls', 'xlsx', 'xlsm',
+   'xlsb', 'xlk', 'ppt', 'pptx', 'pptm', 'mdb', 'accdb', 'pst', 'dwg', 'dxf', 'dxg', 'wpd', 'rtf', 
+   'wb2', 'mdf', 'dbf', 'psd', 'pdd', 'pdf', 'eps', 'ai', 'indd', 'cdr', 'dng', '3fr', 'arw', 'srf', 
+   'sr2', 'mp3', 'bay', 'crw', 'cr2', 'dcr', 'kdc', 'erf', 'mef', 'mrw', 'nef', 'nrw', 'orf', 'raf', 
+   'raw', 'rwl', 'rw2', 'r3d', 'ptx', 'pef', 'srw', 'x3f', 'der', 'cer', 'crt', 'pem', 'pfx', 'p12', 
+   'p7b', 'p7c', 'jpg', 'png', 'jfif', 'jpeg', 'gif', 'bmp', 'exif', 'txt')
+   AND Initial_extension <> New_extension
+GROUP BY file
+ORDER BY sfj.time
+LIMIT 20000;
