@@ -1,0 +1,29 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/find-traffic-for-destination-port
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- DestinationPort
+-- FirstTime
+-- LastTime
+
+SELECT
+  strftime('%Y-%m-%dT%H:%M:%SZ', datetime(snj.time,'unixepoch')) dateTime,
+  u.username userName,
+  snj.sophosPID,
+  spj.processName processName,
+  CAST(spj.cmdline AS TEXT) cmdLine,
+  strftime('%Y-%m-%dT%H:%M:%SZ',datetime(snj.processStartTime,'unixepoch')) AS Process_Start,
+  strftime('%Y-%m-%dT%H:%M:%SZ',datetime(snj.startTime,'unixepoch')) AS Connection_Start,
+  snj.source,
+  snj.sourcePort,
+  snj.destination,
+  snj.destinationPort,
+  snj.dataSent,
+  snj.dataRecv
+FROM sophos_network_journal snj
+  LEFT JOIN sophos_process_journal spj USING (sophosPID)
+  LEFT JOIN users u ON spj.sid = u.uuid
+WHERE snj.destinationPort LIKE '$$DestinationPort$$' AND snj.time BETWEEN $$FirstTime$$ AND $$LastTime$$
