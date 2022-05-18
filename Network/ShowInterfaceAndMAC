@@ -1,0 +1,11 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/live-discover-query---mac-address-list
+
+############ 
+
+SELECT
+    description "Desc",
+    mac "MAC"
+FROM interface_details
+WHERE MAC >1
