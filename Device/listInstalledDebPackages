@@ -1,0 +1,13 @@
+*/ SOPHOS COMMUNITY POST:
+https://community.sophos.com/intercept-x-endpoint/i/device/list-installed-deb-packages-on-debian-ubuntu-linux-serve
+/*
+
+SELECT 
+         name "Package name",
+         version "Package version",
+         source "Package source",
+         size "Package size in bytes",
+         arch "Package architecture",
+         revision "Package revision"
+FROM deb_packages
+
