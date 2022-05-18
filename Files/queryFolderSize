@@ -1,0 +1,6 @@
+-- Define directory as STRING type
+
+SELECT directory, 
+SUM(CAST(ROUND((size * 10e-7),4) AS varchar)) AS SizeInMB 
+FROM file 
+WHERE directory = '$$directory$$'
