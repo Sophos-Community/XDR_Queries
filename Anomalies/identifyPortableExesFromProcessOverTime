@@ -1,0 +1,42 @@
+/* SOPHOS COMMUNITY POST:
+https://community.sophos.com/intercept-x-endpoint/i/anomalies/identify-all-portable-executables-deployed-or-modified-by-a-process-name-over-time
+*/
+
+-- DEFINE THE FOLLOWING VARIABLES
+-- STRING $$Name of process deploying the file Uses wildcards$$
+-- DATE $$startTime$$
+-- DATE $$endTime$$
+ 
+SELECT 
+   CAST(datetime(sfj.time,'unixepoch') AS TEXT) deployTime,
+   replace(sfj.pathName, rtrim(sfj.pathName, replace(sfj.pathName, '\', '')), '') fileName,
+   CASE sfj.eventType 
+      WHEN "0" THEN "Executable File Created" 
+      WHEN "1" THEN "Executable File Renamed" END eventType,
+   spj.processName deployingProcessName,
+   sfj.pathName filePath,
+   spj.pathname deployingProcessPath,
+   sfj.sophosPID, /* The process that deployed the executable */
+   spj.cmdLine deployingProcessCmdLine,
+   u.username deployingProcessUser,
+   sfp.mlScore,
+   sfp.localRep,
+   sfp.globalRep,
+   CASE sfj.sha256 
+      WHEN "" THEN sfhj.sha256 /* The sha256 is not available for file creation events, 
+but it will be available from the file hash table if the file has been run */
+      ELSE sfj.sha256 END sha256
+FROM sophos_file_journal sfj 
+   LEFT JOIN sophos_process_journal spj ON spj.sophosPID = sfj.sophosPID
+   LEFT JOIN users u ON u.uuid = spj.sid
+   LEFT JOIN sophos_file_hash_journal sfhj ON sfhj.fileID = sfj.fileID AND sfhj.time = sfj.time
+   LEFT JOIN sophos_file_properties sfp ON sfp.sha256 = 
+      (CASE
+         WHEN sfhj.sha256 IS NULL OR sfhj.sha256 = '' THEN '0000000000000000000000000000000000000000000000000000000000000000'
+         ELSE sfhj.sha256
+      END )
+WHERE sfj.subject = "FileBinaryChanges"
+   AND sfj.eventType IN (0, 1) /* File created or renamed */
+   AND sfj.time >= $$startTime$$
+   AND sfj.time <= $$endTime$$
+   AND deployingProcessName LIKE '$$Name of process deploying the file Uses wildcards$$'
