@@ -1,0 +1,35 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/live-discovery---need-help-to-get-current-ip-address
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- startTime
+-- endTime
+-- ipAddress
+
+SELECT
+   strftime('%Y-%m-%dT%H:%M:%SZ', datetime(snj.time,'unixepoch')) dateTime,
+   u.username userName,
+   spj.processName processName,
+   CAST(spj.cmdline AS TEXT) cmdLine,
+   snj.source,
+   snj.sourcePort,
+   snj.destination,
+   snj.destinationPort
+FROM sophos_network_journal snj
+   LEFT JOIN sophos_process_journal spj USING (sophosPID)
+   LEFT JOIN users u ON spj.sid = u.uuid
+WHERE
+   ( 
+      snj.source LIKE '$$ipAddress$$'
+      OR snj.destination LIKE '$$ipAddress$$'
+   )
+   AND snj.time > $$startTime$$
+   AND snj.time < $$endTime$$
+GROUP BY 
+   snj.source,
+   snj.sourceport,
+   snj.destination,
+   snj.destinationport
