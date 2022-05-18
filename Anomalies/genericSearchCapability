@@ -1,0 +1,40 @@
+/* SOPHOS COMMUNITY POST:
+https://community.sophos.com/intercept-x-endpoint/i/anomalies/generic-search
+*/
+
+-- VARIABLE:   $$Begin Search on date$$                  DATE
+-- VARIABLE:   $$Command Line$$                          STRING
+-- VARIABLE:   $$End Search on date$$                    DATE
+-- VARIABLE:   $$Process Name$$                          STRING
+-- VARIABLE:   $$Parent Process Name$$                   STRING
+-- VARIABLE:   $$User Name$$                             STRING
+
+SELECT 
+   CAST( replace(datetime(spj.time,'unixepoch'),' ','T') AS TEXT)Date_Time, -- add the T to help excel understand this is a date and time
+   CAST( users.username AS TEXT) User_Name,
+   CAST( (SELECT processname FROM sophos_process_journal spj2 WHERE spj2.sophosPID = spj.parentSophosPID) AS TEXT) Parent_Process_Name,
+   CAST( spj.processname AS TEXT) Process_Name,
+   CAST( spj.cmdline AS TEXT) CmdLine,
+   
+   -- SHOW a pretty bar where the size depends on the execution duration, Each █ is 1 hour
+   CASE CAST( (CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END)/60/60 AS INT)
+      WHEN 0 THEN '│'
+      ELSE printf('%.' || CAST( (CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END)/60/60 AS TEXT) ||'c', '█') 
+   END Execution_Duration,
+   
+   CAST( CASE spj.eventType WHEN 0 THEN strftime('%s', 'now') - spj.processStartTime ELSE MAX(spj.endtime) - spj.processStartTime END AS TEXT) Seconds,
+   CAST( spj.sophosPid AS TEXT) SophosPID,
+   CAST( spj.parentSophosPID AS TEXT) Parent_SophosPID,
+   CAST( spj.SHA256 AS TEXT) SHA256,
+   CAST( CASE spj.eventType WHEN 0 THEN 'Process Running' ELSE 'Process Stopped' END AS TEXT)ProcessStatus,
+   CAST( spj.pathname AS TEXT) PathName
+FROM sophos_process_journal spj 
+   LEFT JOIN users ON uuid LIKE sid
+WHERE 
+   -- SEARCH AND FILTER CRITERIA
+   spj.time > $$Begin Search on date$$ AND spj.time < $$End Search on date$$ AND
+   spj.cmdline LIKE '$$Command Line$$' AND 
+   users.username LIKE '$$User Name$$' AND
+   spj.processname LIKE '$$Process Name$$' AND
+   Parent_Process_Name LIKE '$$Parent Process Name$$'
+GROUP BY SophosPID
