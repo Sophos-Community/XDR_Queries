@@ -1,0 +1,21 @@
+*/ SOPHOS COMMUNITY POST: 
+https://community.sophos.com/intercept-x-endpoint/i/files/query-a-specific-file-path-for-items-and-compare-file-scoring
+/*
+
+-- Set variable name filepath as STRING type
+
+SELECT
+sfp.sha256,
+sfp.mlScore,
+sfp.puaScore,
+sfp.globalRep,
+sfp.localRep,
+f.path,
+f.filename,
+datetime(f.atime,'unixepoch','localtime') AS Last_Accessed,
+datetime(f.mtime,'unixepoch','localtime') AS Last_Modified,
+datetime(f.ctime,'unixepoch','localtime') AS Creation_Time
+FROM file f
+LEFT JOIN sophos_file_properties sfp
+  ON f.path = sfp.pathname
+WHERE path LIKE '$$filepath$$\%.%'
