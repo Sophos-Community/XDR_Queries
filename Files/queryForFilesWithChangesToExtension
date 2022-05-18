@@ -1,0 +1,21 @@
+*/ SOPHOS COMMUNITY POST:
+https://community.sophos.com/intercept-x-endpoint/i/files/stories-from-the-front-line---finding-files-modified-by-ransomware
+\*
+
+-- With variable FilePath to search and STRING type
+
+SELECT DISTINCT
+   filename,
+   replace(filename, rtrim(filename, replace(filename, '.', '')), '') extension,
+   rtrim (filename, '.' || replace(filename, rtrim(filename, replace(filename, '.', '')), '')) Extension_removed,
+   *
+FROM file
+WHERE path LIKE '$$FilePath to search$$'
+   AND replace(Extension_removed, rtrim(Extension_removed, replace(Extension_removed, '.', '')), '') IN 
+      ('odt', 'ods', 'odp', 'odm', 'odc', 'odb', 'doc', 'docx', 'docm', 'wps', 'xls', 'xlsx', 'xlsm',
+      'xlsb', 'xlk', 'ppt', 'pptx', 'pptm', 'mdb', 'accdb', 'pst', 'dwg', 'dxf', 'dxg', 'wpd', 'rtf', 
+      'wb2', 'mdf', 'dbf', 'psd', 'pdd', 'pdf', 'eps', 'ai', 'indd', 'cdr', 'dng', '3fr', 'arw', 'srf', 
+      'sr2', 'mp3', 'bay', 'crw', 'cr2', 'dcr', 'kdc', 'erf', 'mef', 'mrw', 'nef', 'nrw', 'orf', 'raf', 
+      'raw', 'rwl', 'rw2', 'r3d', 'ptx', 'pef', 'srw', 'x3f', 'der', 'cer', 'crt', 'pem', 'pfx', 'p12', 
+      'p7b', 'p7c', 'jpg', 'png', 'jfif', 'jpeg', 'gif', 'bmp', 'exif', 'txt')
+LIMIT 20000;
