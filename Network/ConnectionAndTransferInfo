@@ -1,0 +1,51 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/outbound-smb-traffic
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLES:
+-- start_time
+-- end_time
+-- ip_address
+-- port
+
+SELECT
+    STRFTIME('%Y-%m-%dT%H:%M:%SZ', DATETIME(network_journal.time, 'unixepoch')) AS date_time,
+    users.username AS username,
+    process_journal.processName AS process_name,
+    CAST(process_journal.cmdline AS TEXT) AS cmd_line,
+    CASE CAST(SUM(network_journal.dataSent) / 1024 AS INT)
+        WHEN 0 THEN '|'
+        ELSE PRINTF('%.' || CAST(SUM(network_journal.dataSent) / 1024 AS TEXT) || 'c', '█')
+    END AS data_sent_size,
+    CASE CAST(SUM(network_journal.dataRecv) / 1024 AS INT)
+        WHEN 0 THEN '|'
+        ELSE PRINTF('%.' || CAST(SUM(network_journal.dataRecv) / 1024 AS TEXT) || 'c', '█')
+    END AS data_recv_size,
+    network_journal.source,
+    network_journal.sourcePort AS source_port,
+    network_journal.destination,
+    network_journal.destinationPort AS destination_port,
+    SUM(network_journal.dataSent) AS total_data_sent,
+    SUM(network_journal.dataRecv) AS total_data_recv,
+    network_journal.sophosPID AS sophos_pid
+FROM sophos_network_journal AS network_journal
+LEFT JOIN sophos_process_journal AS process_journal
+    USING (sophosPID)
+LEFT JOIN users
+    ON process_journal.sid = users.uuid
+WHERE
+    (
+        network_journal.source LIKE '$$ip_address$$'
+        OR network_journal.destination LIKE '$$ip_address$$'
+    )
+    AND network_journal.time > $$start_time$$
+    AND network_journal.time < $$end_time$$
+    AND (network_journal.sourcePort = $$port$$ OR network_journal.destinationPort = $$port$$)
+GROUP BY
+    network_journal.sophosPID,
+    network_journal.source,
+    network_journal.sourcePort,
+    network_journal.destination,
+    network_journal.destinationPort
