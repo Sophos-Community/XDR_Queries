@@ -1,0 +1,34 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/detecting-a-recurring-beacon-call-home-process
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- Hours to check
+
+WITH MIN_MAX_AVG_ConnectionCount AS (
+   WITH Connection_history_with_interval_data AS (
+      WITH Connection_History AS (
+
+         SELECT ROW_NUMBER () OVER (PARTITION BY spa.destination, spa.destinationport) RowNum, spa.destination || '::' || spa.destinationport Tuple, spa.time, spa.sophosPID, spa.destination, spa.destinationport
+         FROM sophos_process_activity spa
+         WHERE spa.subject = 'Network' AND spa.time >= strftime('%s','now','-$$Hours to check$$ hours') AND spa.destination NOT IN ('127.0.0.1','::1') /* Ignore loopback */ )
+
+      SELECT CH.rownum, CH.Tuple, CH.time - (SELECT CH2.time FROM Connection_history CH2 WHERE CH2.Tuple = CH.Tuple and CH2.rownum = CH.rownum-1) Interval, CH.sophosPID, CH.destination, CH.destinationport
+      FROM Connection_History CH
+      WHERE CH.rownum > 1 )
+
+   SELECT COUNT(rownum) + 1 Number_of_Connections, Tuple, MAX(Interval) Max_Interval, MIN(Interval) Min_Interval, AVG(Interval) Average_Interval, SUM(Interval) Sum_Interval, sophosPID, destination, destinationport
+   FROM Connection_history_with_interval_data
+   GROUP by Tuple )
+
+SELECT
+   (SELECT pathname FROM sophos_process_journal spj WHERE spj.time = replace(MinMax.SophosPID, rtrim(MinMax.SophosPID, replace(MinMax.SophosPID, ':', '')), '') / 10000000 - 11644473600 AND spj.sophospid = MinMax.sophospid LIMIT 1) PathName,
+   Number_of_Connections, Tuple, Min_Interval, Max_Interval, Average_Interval, Sum_Interval, CAST(SophosPID AS TEXT) SophosPID, destination, destinationport
+FROM MIN_MAX_AVG_ConnectionCount MinMax
+WHERE LENGTH(pathname) > 0
+   AND Max_Interval - Min_interval < 10 AND Number_of_Connections > 2
+   AND pathname NOT IN ('C:\Program Files\Sophos\Sophos Network Threat Protection\SophosNtpService.exe',
+                        'C:\Program Files (x86)\Sophos\Sophos Anti-Virus\SavService.exe')
+   AND destination NOT IN ('')
