@@ -1,0 +1,37 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/figure-out-the-original-process-that-triggered-a-network-connection-not-swi_fc-exe
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- src_or_dst_ip
+ 
+ SELECT
+    strftime('%Y-%m-%dT%H:%M:%SZ', datetime(ip.time,'unixepoch')) dateTime,
+    strftime('%Y-%m-%dT%H:%M:%SZ', datetime(ip.processStartTime,'unixepoch')) processStartTime,
+    pro.sophosPID,
+    pro.processName,
+    pro.pathname,
+    pro.parentSophosPID,
+    (SELECT pa.processName FROM sophos_process_journal pa WHERE pro.parentSophosPID = pa.sophosPID) as parentProcessName,
+    ip.source,
+    ip.sourcePort,
+    ip.destination,
+    ip.destinationPort,
+    CASE
+        protocol
+        WHEN 0 THEN 'Unsupported'
+        WHEN 1 THEN 'ICMP/ICMPv4'
+        WHEN 6 THEN 'TCP'
+        WHEN 17 THEN 'UDP'
+        WHEN 58 THEN 'ICMPv6'
+        ELSE protocol
+    END protocol
+FROM
+    sophos_ip_journal ip
+    join sophos_process_journal pro
+    on pro.sophosPID = ip.sophosPID
+WHERE
+    (ip.destination like '$$dst_or_src_ip$$'
+    OR ip.source like '$$dst_or_src_ip$$')
