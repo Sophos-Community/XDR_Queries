@@ -1,0 +1,16 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/network/query-sntp-logs-on-a-specific-date
+
+############ 
+
+-- DEFINE THE FOLLOWING VARIABLE:
+-- YYYY-MM-DD
+
+WITH sntp_table AS 
+  (SELECT * FROM grep 
+  WHERE path = 'C:\ProgramData\Sophos\Sophos Network Threat Protection\Logs\SntpService.log'
+  AND pattern = '$$YYYY-MM-DD$$'),
+  Local_sntp AS (SELECT SPLIT(line, ' ', 0) A, SPLIT(line, ' ',1) Date_Time, SPLIT(line, ' ',2) PID, SPLIT(line, ' ',3) Dash, SPLIT(line, ' ',4) Process, SPLIT(line, ' ',5) Path, SPLIT(line, ' ',6) Accessed, SPLIT(line, ' ',7) Address
+FROM sntp_table)
+SELECT (REPLACE(REPLACE(A,'T',' '),'Z',' ')) AS Date_Time, REPLACE(PID,']', '') "pid:SophosPID", Process || ' ' || Path AS Program, Accessed || ' ' || Address AS URL FROM local_sntp
