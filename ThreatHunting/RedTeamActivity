@@ -1,0 +1,32 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/detecting-red-team-activity
+
+############ 
+
+-- VARIABLE: $$Days to Check$$                 STRING
+-- VARIABLE: $$Having Run N or Fewer Times$$   STRING
+-- VARIABLE: $$Parent Process Name$$           STRING
+
+WITH systemToolsRun AS (
+   SELECT json_group_array(json_object('SophosPID', spj.sophosPID)) SPIDS, COUNT(spj.pathname) runCount
+   FROM sophos_process_journal spj
+   WHERE spj.pathname LIKE 'C:\Windows\%.exe' AND spj.pathname NOT LIKE 'C:\Windows\Temp\%' AND spj.pathname NOT LIKE 'C:\Windows\SoftwareDistribution\%' AND 
+      spj.time >= strftime('%s','now', '-$$Days to Check$$ days') AND spj.eventType = 0
+   GROUP BY spj.pathname HAVING (runCount <= $$Having Run N or Fewer Times$$)
+),
+-- Now that we have a list of rare SPIDs we need to split them up as a list of individual SPIDs
+SPID_List AS (SELECT CAST(json_extract(sys_details.value, '$.SophosPID') AS TEXT) SophosPID FROM systemToolsRun sys, json_each(sys.SPIDS) sys_details )
+
+SELECT
+    CAST(DateTime(spj.time,'unixepoch') AS TEXT) Date_Time, 
+    CAST( (SELECT username FROM users WHERE uid = replace(spj.sid, rtrim(spj.sid, replace(spj.sid, '-', '')), '')) AS TEXT) User_Name,
+    CAST(spj.processName AS TEXT) Process_Name,
+    CAST(spj.pathname AS TEXT) Path_Name,
+    CAST(spj.cmdline AS TEXT) Cmd_Line,
+    CAST(spj.sophosPID AS TEXT) SophosPID,
+    CAST( (SELECT processname FROM sophos_process_journal spj2 WHERE spj2.sophosPID = spj.parentSophosPID AND spj2.eventType = 0) AS TEXT) Parent_Process_Name,
+    CAST(spj.parentSophosPID AS TEXT) Parent_SophosPID
+FROM SPID_List SPID 
+   LEFT JOIN sophos_process_journal spj ON spj.eventtype = 0 AND spj.sophosPID = SPID.SophosPID AND spj.time = replace(SPID.SophosPID, rtrim(SPID.SophosPID, replace(SPID.SophosPID,':','')),'')/10000000-11644473600
+WHERE Parent_Process_Name LIKE '$$Parent Process Name$$'
