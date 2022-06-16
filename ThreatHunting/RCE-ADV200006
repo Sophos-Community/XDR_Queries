@@ -1,0 +1,35 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/live-discover-query---vulnerability-check-for-adv200006-type-1-font-parsing-remote-code-execution-vulnerability
+
+############ 
+
+ SELECT
+   CASE (SELECT '1' FROM os_version WHERE
+         (major = '10' AND build = '14393') OR /* version 1607 */
+         (major = '10' AND build = '16299') OR  /* version 1709 */
+         (major = '10' AND build = '17134') OR  /* version 1803 */
+         (major = '10' AND build = '17763') OR  /* version 1809 */
+         (major = '10' AND build = '18362') OR  /* version 1903 */
+         (major = '10' AND build = '18363') OR  /* version 1909 */
+         (major = '6' AND minor = '1' ) OR /* Windows 7 */
+         (major = '6' AND minor = '3' ) OR /* Windows 8.1 */
+         (major = '6' AND minor = '1' ) OR /* Windows Server 2008 */
+         (major = '6' AND minor = '2' ) OR /* Windows Server 2012 */
+         (major = '10' AND build = '14393') OR  /* Windows Server 2016 */
+         (major = '10' AND build = '16299') OR  /* Windows Server 2016 */
+         (major = '10' AND build = '17763')  /* Windows Server 2019 */
+      )
+      WHEN '1' THEN 'TRUE'
+      ELSE 'FALSE'
+   END 'Vulnerable OS',
+
+   CASE (SELECT '1' FROM registry WHERE
+         key = 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows' AND
+         name LIKE '%DisableATMFD%' AND
+         data = '1'
+      )
+      WHEN '1' THEN 'ENABLED'
+      ELSE 'Not SET'
+   END 'Mitigation - HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Windows\DisableATMFD    1'
+;
