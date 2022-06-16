@@ -1,0 +1,33 @@
+##### SOPHOS COMMUNITY POST #####
+
+Link
+
+############ 
+
+SELECT
+
+  r.path,
+  r.name,
+  r.data,
+  REPLACE(REPLACE(REPLACE(REGEX_SPLIT(r.data, ' [-/]', 0), '"', ''), '%windir%', 'C:\Windows'), '%SystemRoot%', 'C:\Windows') AS filepath,
+  p.mlScore,
+  p.puaScore,
+  p.localRep,
+  p.globalRep,
+  json_extract(p.localRepData, '$.reputationData.isSigned') AS is_signed,
+  json_extract(p.localRepData, '$.reputationData.signerInfo[0].isValid') AS isValid,
+  json_extract(p.localRepData, '$.reputationData.signerInfo[0].signer') AS signer,
+  p.sha256 as sha256
+
+FROM registry AS r
+JOIN sophos_file_properties p ON p.pathname=filepath
+WHERE
+
+  ( key == 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' OR
+  key == 'HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run' OR
+  key == 'HKEY_USERS\Software\Microsoft\Windows\CurrentVersion\Run' OR
+  key == 'HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce' OR
+  key == 'HKEY_USERS\Software\Microsoft\Windows\CurrentVersion\RunOnce' OR
+  key == 'HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunServices' OR
+  key == 'HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunServicesOnce' OR
+  key == 'HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\RunOnce\Setup' )
