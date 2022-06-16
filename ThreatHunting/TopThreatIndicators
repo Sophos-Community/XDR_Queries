@@ -1,0 +1,33 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/list-top-threat-indicators-for-windows
+
+############ 
+
+-- VARIABLE:  $$Begin Search on date$$    DATE 
+-- VARIABLE:  $$Hours to Search$$         STRING
+
+WITH RECURSIVE
+	Time_Interval(x) AS (
+		VALUES ( CAST($$Begin Search on date$$ AS INT) )
+		UNION ALL
+		SELECT x+14400 FROM Time_Interval WHERE x < CAST($$Begin Search on date$$ AS INT) + CAST( $$Hours to Search$$ * 3600 AS INT)
+	),
+List_of_Stuff AS ( SELECT * 
+FROM Sophos_File_Properties 
+WHERE sophos_File_properties.pathname IN (SELECT DISTINCT pathname FROM Time_Interval t JOIN sophos_process_journal spj ON spj.time > t.x and spj.time < t.x+14400) GROUP BY sha256
+)
+SELECT DISTINCT 
+   CAST(sha256 AS TEXT) SHA256,
+   pathname,
+   CASE mlscore < 24
+     WHEN 1 THEN 'Low suspecion : ' || CAST(mlscore AS TEXT)
+     ELSE CASE mlscore < 27 WHEN 1 THEN 'Medium suspecion : ' || CAST(mlscore AS TEXT) ELSE 'High suspecion : ' || CAST(mlscore AS TEXT) END
+   END mlcore,
+   CASE puascore > 20
+     WHEN 1 THEN 'Suspect PUA : ' || CAST(puascore AS TEXT)
+     ELSE ''
+   END puacore,
+   localrep,
+   globalrep
+FROM List_of_Stuff WHERE (mlscore > 23 OR puaScore > 20) AND (localRep < 91) ORDER BY puaScore DESC
