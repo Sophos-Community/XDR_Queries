@@ -1,0 +1,24 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/live-discover-query---malware-persistence
+
+############ 
+
+SELECT
+
+  s.display_name,
+  s.path,
+  s.status,
+  s.start_type,
+  s.service_type,
+
+REPLACE(REGEX_SPLIT(s.path, ' [-/]', 0), '"', '') AS filepath,
+  p.mlScore,
+  p.puaScore,
+  p.localRep,
+  p.globalRep,
+  p.sha256,
+  p.localRepData
+
+FROM services s
+JOIN sophos_file_properties p ON p.pathname=filepath;
