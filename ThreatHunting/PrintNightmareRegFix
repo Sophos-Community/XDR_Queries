@@ -1,0 +1,14 @@
+##### SOPHOS COMMUNITY POST #####
+
+Link
+
+############ 
+
+SELECT DISTINCT
+
+CASE
+      WHEN name = 'RestrictDriverInstallationToAdministrators' THEN 'Fix Applied'
+      Else 'Fix Not Applied'
+      END AS Status,
+      
+path FROM registry WHERE key ='HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Policies\Microsoft\Windows NT\Printers\PointAndPrint'
