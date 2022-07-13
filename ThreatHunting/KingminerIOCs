@@ -1,0 +1,139 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/detecting-kingminer-iocs
+
+############ 
+
+WITH kingminer_IOCs(attribution, Conviction, method, ioc, notes) AS (
+   VALUES
+   ('kingminer', 'NON-deterministic', 'domain_name', '%fdae.tk', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%fdae.com', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%fghh.com', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%fgae.ga', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%fghh.cf', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%a.qwerr.ga', 'Time-coded DGA - These servers used domain names that were generated from the value of the current date and time.'),
+   ('kingminer', 'NON-deterministic', 'domain_name', '%lu4n.com', 'The lu4n.com site also hosted a few SQL brute forcing command injection tools'),
+   ('kingminer', 'Deterministic', 'domain_name', '%ip.yototoo.com', 'encrypted backdoor connection'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%cvffdscccss%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%xieliang3%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%hansho23%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%paishi45276%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%oit847996%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%muzhuoyiyue%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%daonaoyef%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%leishi9%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%yut42929%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%shazhuangq%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%zaiya00387%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%gghhjjjj%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%gghhhhgh%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%haj08341%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%qipu872262484%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%jiaoyi7992%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%huitun237%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%zaiya00387%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%fff%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%chigutuiche%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%zhizi471%', 'Github repositories used to deliver contents of kingminer botnet'),
+   ('kingminer', 'NON-deterministic', 'URL', '%github%jiaoshq %', 'Github repositories used to deliver contents of kingminer botnet'),
+   /* ('kingminer', 'NON-deterministic', 'Powershell_Parent', '%sqlserver.exe%', 'successful infection was the execution of a PowerShell script spawned from the sqlservr.exe process'), */
+   ('kingminer', 'NON-deterministic', 'Powershell_renamed', '%powershell%', 'A powershell process runing under another name'),
+   ('kingminer', 'Non-Deterministic', 'IP', '185.234.216.223', 'this server is part of the Kingminer infrastructure'),
+   ('kingminer', 'Non-Deterministic', 'IP', '9.9.9.9', 'The malicious loader contains the IP addresses of a few DNS servers'),
+   ('kingminer', 'Non-Deterministic', 'IP', '1.1.1.1', 'The malicious loader contains the IP addresses of a few DNS servers'),
+   ('kingminer', 'Non-Deterministic', 'IP', '119.29.29.29', 'The malicious loader contains the IP addresses of a few DNS servers'),
+   ('kingminer', 'Non-Deterministic', 'IP', '8.8.4.4', 'The malicious loader contains the IP addresses of a few DNS servers'),
+   ('kingminer', 'Non-Deterministic', 'file_path', 'C:\Users\Public\Music\1.vbs', 'VBscript downloader'),
+   ('kingminer', 'Non-Deterministic', 'file_path', 'C:\Users\Public\Music\2.vbs', 'VBscript downloader'),
+   ('kingminer', 'Non-Deterministic', 'cmdline', '%whoami%', 'luan_exec reference'),
+   ('kingminer', 'Non-Deterministic', 'cmdline', '%vbscript:GetObject(%script:ww.3113cfdae.com/r1.txt', 'Kingminer executes this simple downloader command'),
+   ('kingminer', 'Non-Deterministic', 'processname', 'fix.exe', 'Clean executable may be used to trigger malware via side loading'),
+   ('kingminer', 'Non-Deterministic', 'processname', 'alger.exe', 'Clean executable may be used to trigger malware via side loading'),
+   ('kingminer', 'Non-Deterministic', 'processname', 'powered.exe', 'Clean executable may be used to trigger malware via side loading'),
+   ('kingminer', 'Non-Deterministic', 'processname', 'repair.exe', 'Clean executable may be used to trigger malware via side loading'),
+   ('kingminer', 'Non-Deterministic', 'processname', 'dwmer.exe', 'Clean executable may be used to trigger malware via side loading')
+)
+, for(x) AS (
+   VALUES ( ( SELECT CAST (strftime ('%s', 'now','-$$Hours to look back$$ hours') AS INT) ) )
+   UNION ALL
+   SELECT x+1200 FROM for WHERE x < (SELECT CAST (strftime ('%s', 'now') AS INT))
+)
+SELECT
+   CAST( datetime(spa.time,'unixepoch') AS TEXT) DATE_TIME,
+   km.attribution,
+   km.Conviction,
+   spa.subject,
+   spa.SophosPID,
+   CAST ( (select replace(spa.pathname, rtrim(spa.pathname, replace(spa.pathname, '\', '')), '')) AS TEXT) process_name,
+   spa.action,
+   spa.object,
+   spa.url,
+   km.method,
+   km.ioc,
+   km.notes
+FROM for
+   LEFT JOIN kingminer_IOCs km ON km.method IN('domain_name', 'url')
+   LEFT JOIN sophos_process_activity spa ON spa.subject IN ('Http','Url','Network') AND spa.time >= for.x and spa.time <= for.x+1200
+WHERE spa.url LIKE km.ioc
+
+UNION ALL
+
+SELECT
+   CAST( datetime(spa.time,'unixepoch') AS TEXT) DATE_TIME,
+   km.attribution,
+   km.Conviction,
+   spa.subject,
+   spa.SophosPID,
+   CAST ( (select replace(spa.pathname, rtrim(spa.pathname, replace(spa.pathname, '\', '')), '')) AS TEXT) process_name,
+   spa.action,
+   spa.object,
+   spa.url,
+   km.method,
+   km.ioc,
+   km.notes
+FROM for
+   LEFT JOIN kingminer_IOCs km ON km.method IN('ip')
+   LEFT JOIN sophos_process_activity spa ON spa.subject IN ('Http','Ip','Network') AND spa.time >= for.x and spa.time <= for.x+1200
+WHERE spa.source LIKE km.ioc OR spa.destination LIKE km.ioc
+
+UNION ALL
+
+SELECT
+   CAST( datetime(spa.time,'unixepoch') AS TEXT) DATE_TIME,
+   km.attribution,
+   km.Conviction,
+   spa.subject,
+   spa.SophosPID,
+   CAST ( (select replace(spa.pathname, rtrim(spa.pathname, replace(spa.pathname, '\', '')), '')) AS TEXT) process_name,
+   spa.action,
+   spa.object,
+   spa.url,
+   km.method,
+   km.ioc,
+   km.notes
+FROM for
+   LEFT JOIN kingminer_IOCs km ON km.method IN('cmdline','file_path')
+   LEFT JOIN sophos_process_activity spa ON spa.subject IN ('FileBinaryChanges','FileBinaryReads','FileDataChanges','FileDataReads','FileOtherChanges','FileOtherReads', 'Image','Process') AND
+spa.time >= for.x and spa.time <= for.x+1200
+WHERE spa.pathname LIKE km.ioc OR spa.cmdline LIKE km.ioc
+
+UNION ALL
+
+SELECT
+   CAST( datetime(spa.time,'unixepoch') AS TEXT) DATE_TIME,
+   km.attribution,
+   km.Conviction,
+   spa.subject,
+   spa.SophosPID,
+   CAST ( (select replace(spa.pathname, rtrim(spa.pathname, replace(spa.pathname, '\', '')), '')) AS TEXT) process_name,
+   'Powershell renamed',
+   spa.object,
+   spa.url,
+   km.method,
+   km.ioc,
+   km.notes
+FROM for
+   LEFT JOIN kingminer_IOCs km ON km.method IN('Powershell_renamed')
+   LEFT JOIN sophos_process_activity spa ON spa.subject IN ('FileBinaryChanges','FileOtherChanges') AND
+spa.time >= for.x and spa.time <= for.x+1200
+WHERE spa.pathname LIKE km.ioc
