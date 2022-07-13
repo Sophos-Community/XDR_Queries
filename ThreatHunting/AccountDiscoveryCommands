@@ -1,0 +1,30 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/threat-hunting---account-discovery
+
+############ 
+
+-- VARIABLE:   $$Begin Search on date$$                  DATE
+-- VARIABLE:   $$End Search on date$$                    DATE
+
+SELECT DISTINCT
+   CAST( replace(datetime(spj.time,'unixepoch'),' ','T') AS TEXT)Date_Time, -- add the T to help excel understand this is a date and time   *
+   CAST( replace(datetime(spj.processStartTime,'unixepoch'), ' ', 'T') AS TEXT)Process_Start_Time,
+   PID, 
+   sophosPID,
+   CAST( replace(datetime(spj.parentProcessStartTime,'unixepoch'), ' ', 'T') AS TEXT)Parent_Process_Start_Time,
+   parentPID,
+   parentSophosPID,
+   CAST( users.username AS TEXT) User_Name,
+   sessionId,
+   pathname,
+   processName,
+   cmdLine,
+   sha256
+FROM sophos_process_journal spj 
+   LEFT JOIN users ON uuid LIKE sid
+WHERE spj.time > $$Begin Search on date$$ AND spj.time < $$End Search on date$$
+AND 
+   spj.processName LIKE 'net%'
+AND 
+   (spj.cmdLine LIKE '%localgroup%' OR spj.cmdLine LIKE '%user%' OR spj.cmdLine LIKE '%group%' OR spj.cmdLine)
