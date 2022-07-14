@@ -1,0 +1,35 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/data-lake/find-all-encoded-powershell-in-the-data-lake
+
+############ 
+
+WITH encoded_data AS (
+SELECT
+calendar_time,
+name,
+username,
+meta_hostname,
+sophos_pid,
+cmdline,
+parent_name,
+parent_sophos_pid,
+query_name,
+replace(substr(cmdline, strpos(cmdline, ' -e')+2, length(cmdline)),rtrim(substr(cmdline, strpos(cmdline, ' -e')+2, length(cmdline)),replace(substr(cmdline, strpos(cmdline, ' -e')+2, length(cmdline)),' ','')),'') Encoded_Command
+FROM xdr_data
+WHERE ( LOWER (cmdline)  LIKE '% -e %' OR LOWER (cmdline)  LIKE '% -en %' OR LOWER (cmdline)  LIKE '% -enc %' OR LOWER (cmdline)  LIKE '% -enco %' OR LOWER (cmdline)  LIKE '% -encod %' OR LOWER (cmdline)  LIKE '% -encode %' OR LOWER (cmdline)  LIKE '% -encoded %'
+OR LOWER (cmdline)  LIKE '% -encodedc %' OR LOWER (cmdline)  LIKE '% -encodedco %' OR LOWER (cmdline)  LIKE '% -encodedcom %' OR LOWER (cmdline)  LIKE '% -encodedcomm %' OR LOWER (cmdline)  LIKE '% -encodedcomma %'
+OR LOWER (cmdline)  LIKE '% -encocodedcomman %' OR LOWER (cmdline) LIKE '% -encodedcommand %' OR LOWER (cmdline)  LIKE '% -ec %')
+)
+SELECT 
+calendar_time,
+name,
+username,
+meta_hostname AS Hostname,
+Encoded_Command, REPLACE(from_utf8(from_base64(Encoded_Command)),CHR(0),'') Decoded_Data,
+sophos_pid,
+cmdline,
+parent_name,
+parent_sophos_pid,
+query_name
+FROM encoded_data WHERE regexp_like(Encoded_Command, '^(?:[A-Za-z0-9+\/]{4})*(?:[A-Za-z0-9+\/]{4}|[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}={2})$')
