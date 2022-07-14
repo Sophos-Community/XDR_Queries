@@ -1,0 +1,34 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/device/verify-if-an-endpoint-agent-is-on-the-new-sdds3-update-mechanism
+
+############ 
+
+WITH 
+
+SDDS3Enabled AS (SELECT
+   CASE
+      WHEN data LIKE '3' THEN 'Yes ✅'
+      ELSE 'No ❌'
+   END AS SDDS3Enabled
+FROM registry 
+WHERE key = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\" AND name LIKE '%Version'),
+
+SDDS3Ready AS (SELECT
+   CASE
+      WHEN data LIKE '1' THEN 'Yes ✅'
+      ELSE 'No ❌'
+   END AS SDDS3Ready
+FROM registry 
+WHERE key = "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Sophos Endpoint Defense\EndpointFlags\" AND name='sdds3.ready'),
+
+Version AS (SELECT data as VersionNumber
+FROM registry 
+WHERE key = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Sophos\AutoUpdate\UpdateStatus\Details\" AND name='Version')
+
+SELECT VersionNumber, SDDS3Enabled,
+   CASE
+      WHEN SDDS3Enabled = 'Yes ✅' then 'N/A'
+      WHEN SDDS3Ready = 'No ❌'then SDDS3Ready
+   END as SDDS3Ready
+FROM SDDS3Enabled JOIN SDDS3Ready JOIN Version
