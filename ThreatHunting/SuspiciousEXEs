@@ -1,0 +1,23 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/query-exes-in-suspicious-location-compare-scoring
+
+############ 
+
+SELECT sfp.sha256,
+sfp.mlScore,
+sfp.puaScore,
+sfp.globalRep,
+sfp.localRep,
+f.path,
+f.filename,
+datetime(f.atime,'unixepoch','localtime') AS Last_Accessed,
+datetime(f.mtime,'unixepoch','localtime') AS Last_Modified,
+datetime(f.ctime,'unixepoch','localtime') AS Last_Status,
+datetime(f.btime,'unixepoch','localtime') AS Created_Time
+FROM file f
+LEFT JOIN sophos_file_properties sfp
+ON f.path = sfp.path
+WHERE f.path LIKE 'C:\users\%\AppData\%.exe'
+OR f.path LIKE 'C:\users\%\AppData\Roaming\%.exe'
+OR f.path LIKE 'C:\ProgramData\%.exe' or f.path LIKE 'C:\Program Files\%.exe'
