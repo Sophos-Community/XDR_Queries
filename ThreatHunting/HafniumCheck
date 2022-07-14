@@ -1,0 +1,96 @@
+##### SOPHOS COMMUNITY POST #####
+
+https://community.sophos.com/intercept-x-endpoint/i/threat-hunting/hafnium-check
+
+############ 
+
+SELECT '----------------------' Test, '----------------------' Result, '----------------------' Evidence 
+
+UNION ALL
+
+-- EARLIEST Possiable observables
+SELECT 
+   'Earliest possiable Journal entry' Test,
+   REPLACE(datetime(btime,'unixepoch'),' ','T')  Result,
+   'Creation time of Sophos live query directory ' || path Evidence
+FROM file WHERE path = 'C:\ProgramData\Sophos\Live Query'
+
+UNION ALL
+   
+-- VULNERABLE OR NOT
+SELECT DISTINCT
+   'Check if Exchange is deployed or not' Test,
+   GROUP_CONCAT(name, ' '||CHAR(10)) Result,
+   CAST(GROUP_CONCAT( name || ' ' || version || ' ' || install_location, ' '||CHAR(10) ) AS TEXT) Evidence
+FROM programs WHERE name LIKE '%exchange%'
+
+UNION ALL
+
+-- CHECK FOR PATCHES
+SELECT DISTINCT
+   'List any HotFixes Applied' TEST,
+   CAST(GROUP_CONCAT(hotfix_id, ' '||CHAR(10)) AS TEXT) Result,
+   CAST(GROUP_CONCAT(CASE hotfix_id
+                WHEN 'KB5000802' THEN 'Windows 10, Version 2004, Windows Server, Version 2004'
+                WHEN 'KB5000803' THEN 'Windows 10, Version 1607, Windows Server 2016'
+                WHEN 'KB5000808' THEN 'Windows 10, Version 1909, Windows Server, Version 1909'
+                WHEN 'KB5000822' THEN 'Windows 10, Version 1809, Windows Server 2019'
+                WHEN 'KB5000840' THEN 'Windows Server 2012 (Security-only update)'
+                WHEN 'KB5000841' THEN 'Windows 7, Windows Server 2008 R2 (Monthly Rollup)'
+                WHEN 'KB5000844' THEN 'Windows Server 2008 (Monthly Rollup)'
+                WHEN 'KB5000847' THEN 'Windows Server 2012 (Monthly Rollup)'
+                WHEN 'KB5000848' THEN 'Windows 8.1, Windows RT 8.1, Windows Server 2012 R2 (Monthly Rollup)'
+                WHEN 'KB5000851' THEN 'Windows 7, Windows Server 2008 R2 (Security-only update)'
+                WHEN 'KB5000853' THEN 'Windows 8.1, Windows RT 8.1, Windows Server 2012 R2 (Security-only update)'
+                WHEN 'KB5000856' THEN 'Windows Server 2008 (Security-only update)'
+                WHEN 'KB5000871' THEN 'Microsoft Exchange Server 2019, 2016 and 2013'
+                WHEN 'KB5000878' THEN 'Microsoft Exchange Server 2010'
+             END, ','||CHAR(10)) AS TEXT) Evidence
+FROM patches 
+WHERE hotfix_id IN ('KB5000802','KB5000803','KB5000808','KB5000822','KB5000840','KB5000841','KB5000844','KB5000847','KB5000848','KB5000851','KB5000853','KB5000856','KB5000871','KB5000878')
+
+UNION ALL
+
+-- CHECK FOR Exchange Version Info
+SELECT DISTINCT
+   'Check Exchange Version to confirm Patch' Test,
+   CASE product_version 
+      WHEN '15.0.1497.12' THEN 'Patched'
+      WHEN '15.1.2106.13' THEN 'Patched'
+      WHEN '15.1.2176.9' THEN 'Patched'
+      WHEN '15.2.721.13' THEN 'Patched'
+      WHEN '15.2.792.10' THEN 'Patched'
+      ELSE 'NOT PATCHED'
+   END Result,
+   filename || ' Product_Version: ' || Product_version || ' ' || path Evidence
+FROM file 
+WHERE path = ( (SELECT data FROM registry 
+                WHERE key = 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ExchangeServer\v15\Setup' AND path = 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\ExchangeServer\v15\Setup\MsiInstallPath' 
+               )||'bin\Microsoft.Exchange.RpcClientAccess.Service.exe')
+
+UNION ALL
+
+-- SUSPECT Web Shells
+SELECT DISTINCT
+   'List of Suspect Web Shell files (if any)' TEST,
+   CAST(GROUP_CONCAT(filename || ' Found' || CHAR(10)) AS TEXT) Result,
+   CAST(GROUP_CONCAT('PATH: ' || path || CHAR(10) || 'CREATED ON: ' || DATETIME(btime,'unixepoch') || CHAR(10)) AS TEXT) Evidence
+FROM file
+WHERE (path LIKE 'C:\inetpub\wwwroot\aspnet_client\%' OR path LIKE 'C:\inetpub\wwwroot\aspnet_client\system_web\%' OR 
+       path LIKE 'C:\Program Files\Microsoft\Exchange Server\V15\FrontEnd\HttpProxy\owa\auth\%') AND 
+      (filename IN ('web.aspx','help.aspx','document.aspx','errorEE.aspx','errorEEE.aspx','errorEW.aspx','errorFF.aspx','web.aspx',
+                    'healthcheck.aspx','aspnet_www.aspx','aspnet_client.aspx','xx.aspx','shell.aspx','aspnet_iisstart.aspx','one.aspx',
+                    'errorcheck.aspx','t.aspx','discover.aspx','aspnettest.aspx','error.aspx','RedirSuiteServerProxy.aspx','shellex.aspx',
+                    'supp0rt.aspx','HttpProxy.aspx','system_web.aspx','OutlookEN.aspx','TimeoutLogout.aspx','Logout.aspx',
+                    'OutlookJP.aspx','MultiUp.aspx','OutlookRU.aspx') OR
+       (LENGTH(filename) = 13) )
+
+UNION ALL
+
+-- Possiable BREACH DETECTED
+SELECT DISTINCT
+   'Suspect webshell with cmd process detected' TEST,
+   'Found CMD or POWERSHELL Running through WebShell' Result,
+   sophosPID || ' ' || processname || ' run from w3wp.ex or UMWorkerPRocess.exe'  Evidence
+FROM sophos_process_journal spj WHERE LOWER(spj.processname) IN ('cmd.exe','powershell.exe','csc.exe') AND time > strftime('%s','now','-15 days') AND 
+   (SELECT LOWER(processname) FROM sophos_process_journal spj2 WHERE spj2.sophosPID = spj.parentSophosPID) IN ('w3wp.exe', 'umworkerprocess.exe')
