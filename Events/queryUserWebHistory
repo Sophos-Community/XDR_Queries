@@ -1,0 +1,20 @@
+/*
+VARIABLE          TYPE
+$$StartTime$$     DATE
+$$EndTime$$       DATE
+$$UserName$$      Username
+*/
+ 
+SELECT
+  datetime(ses.time,'unixepoch','localtime') AS 'DateTime',
+  ltrim(regex_match(json_extract(raw,'$.userName'),'(\\.+)$',1),"\") AS 'User Name',
+  regex_match(json_extract(raw,'$.resourceId'),'(?:\.?(?:.*?\.)*)\.([^.]+\.[^.]+)$',1) AS 'Action Taken',
+  json_extract(raw,'$.path') AS 'URL',
+  json_extract(raw,'$.threatName') AS 'Threat Name',
+  type 'EventType'
+FROM
+  sophos_events_summary ses
+WHERE
+  json_extract(raw, '$.resourceId') LIKE '%web%'
+AND ses.time BETWEEN $$StartTime$$ AND $$EndTime$$
+AND ltrim(regex_match(json_extract(raw,'$.userName'),'(\\.+)$',1),"\") LIKE '$$UserName$$'
