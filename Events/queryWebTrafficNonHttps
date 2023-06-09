@@ -1,0 +1,109 @@
+-- VARIABLE    url               URL
+-- VARIABLE    start_time        Date
+-- VARIABLE    end_time          Date
+-- VARIABLE    journal_subject   String  /* (dns/http/url/process) */
+-- VARIABLE    process_name      String
+-- Use % for wildcard.
+
+WITH url_regex AS (
+    SELECT
+        '(.*?)([^ ]*' || REPLACE(REPLACE(LOWER('$$url$$'), '.', '\.'), '%', '[^ ]*') || '[^ ]*)' AS pattern
+),
+
+url_events (url_time, sophos_pid, url, journal_subject) AS (
+    SELECT
+        time,
+        sophos_pid,
+        url,
+        'http' AS journal_subject
+    FROM sophos_http_journal
+    WHERE
+        time >= $$start_time$$
+        AND time <= $$end_time$$
+        AND url LIKE '$$url$$'
+
+    UNION ALL
+
+    SELECT
+        time,
+        sophos_pid,
+        url,
+        'url' AS journal_subject
+    FROM sophos_url_journal
+    WHERE
+        time >= $$start_time$$
+        AND time <= $$end_time$$
+        AND url LIKE '$$url$$'
+
+    UNION ALL
+
+    SELECT
+        time,
+        sophos_pid,
+        name,
+        'dns' AS journal_subject
+    FROM sophos_dns_journal
+    WHERE
+        time >= $$start_time$$
+        AND time <= $$end_time$$
+        AND name LIKE REGEX_MATCH('$$url$$', '([A-Za-z]*:\/\/)?([^\/]+)', 2)
+
+    UNION ALL
+
+    SELECT
+        time,
+        sophos_pid,
+        SUBSTR(
+            cmd_line,
+            LENGTH(REGEX_MATCH(LOWER(cmd_line), (SELECT pattern FROM url_regex), 1)) + 1,
+            LENGTH(REGEX_MATCH(LOWER(cmd_line), (SELECT pattern FROM url_regex), 2))
+        ) AS url,
+        'process' AS journal_subject
+    FROM sophos_process_journal
+    WHERE
+        time >= $$start_time$$
+        AND time <= $$end_time$$
+        AND cmd_line LIKE '%$$url$$%'
+        AND '$$url$$' != '%'
+
+    UNION ALL
+
+    SELECT
+        time,
+        sophos_pid,
+        SUBSTR(
+            cmd_line,
+            LENGTH(REGEX_MATCH(LOWER(cmd_line), '(.*?)(http[^ ]+)', 1)) + 1,
+            LENGTH(REGEX_MATCH(LOWER(cmd_line), '(.*?)(http[^ ]+)', 2))
+        ) AS url,
+        'process' AS journal_subject
+    FROM sophos_process_journal
+    WHERE
+        time >= $$start_time$$
+        AND time <= $$end_time$$
+        AND cmd_line LIKE '%http%'
+        AND '$$url$$' = '%'
+)
+
+SELECT
+    STRFTIME('%Y-%m-%dT%H:%M:%SZ', MIN(DATETIME(url_events.url_time, 'unixepoch'))) AS first_date_time,
+    STRFTIME('%Y-%m-%dT%H:%M:%SZ', MAX(DATETIME(url_events.url_time, 'unixepoch'))) AS last_date_time,
+    COUNT(*) AS instances,
+    (SELECT username FROM users WHERE uuid LIKE sid) AS username,
+    process_journal.process_name,
+    process_journal.cmd_line,
+    url_events.url,
+    url_events.sophos_pid,
+    url_events.journal_subject
+FROM url_events
+LEFT JOIN sophos_process_journal AS process_journal
+    ON url_events.sophos_pid = process_journal.sophos_pid
+    WHERE url_events.journal_subject LIKE '$$journal_subject$$'
+    AND process_journal.process_name LIKE '%$$process_name$$%'
+GROUP BY
+    url_events.sophos_pid,
+    url_events.url,
+    url_events.journal_subject
+ORDER BY
+    url_events.sophos_pid,
+    url_events.url_time
