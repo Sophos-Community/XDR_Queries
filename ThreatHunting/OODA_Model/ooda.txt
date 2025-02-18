@@ -1,0 +1,81 @@
+Cybersecurity OODA Loop Template
+
+1. Observe
+
+Identify Threats:
+
+Monitor network traffic for anomalies.
+Review system logs for unusual activities.
+Analyze alerts from security tools (e.g., IDS/IPS, SIEM).
+
+Gather Intelligence:
+
+Collect data from threat intelligence feeds.
+Review recent incident reports and advisories.
+Engage with cybersecurity communities and forums.
+
+Assess Environment:
+
+Conduct regular vulnerability assessments.
+Maintain an up-to-date inventory of assets.
+Evaluate the current security posture and configurations.
+
+2. Orient
+
+Analyze Data:
+
+Correlate data from multiple sources to identify patterns.
+Use threat modeling to understand potential attack vectors.
+Perform root cause analysis on detected incidents.
+
+Contextualize Threats:
+
+Assess the potential impact on critical assets and operations.
+Understand the threat actor's capabilities and motivations.
+Evaluate the likelihood of threat exploitation.
+
+Prioritize Risks:
+
+Rank threats based on severity and potential impact.
+Use risk assessment frameworks (e.g., NIST, ISO) for prioritization.
+Consider business impact and regulatory requirements.
+
+3. Decide
+
+Develop Response Plans:
+
+Create incident response playbooks for different threat scenarios.
+Define containment, eradication, and recovery steps.
+Establish communication plans for internal and external stakeholders.
+
+Allocate Resources:
+
+Assign roles and responsibilities to response team members.
+Ensure availability of necessary tools and technologies.
+Secure budget and support from leadership.
+
+Set Timelines:
+
+Define timelines for each phase of the response plan.
+Establish milestones and checkpoints for progress tracking.
+Ensure timely updates and reporting to stakeholders.
+
+4. Act
+
+Implement Actions:
+
+Execute containment measures to limit threat impact.
+Perform eradication steps to remove the threat from the environment.
+Initiate recovery procedures to restore normal operations.
+
+Monitor Results:
+
+Continuously monitor the effectiveness of response actions.
+Adjust strategies based on real-time feedback and observations.
+Document lessons learned for future improvements.
+
+Document Actions:
+
+Keep detailed records of all actions taken during the incident.
+Prepare post-incident reports for analysis and review.
+Update incident response plans based on lessons learned.
