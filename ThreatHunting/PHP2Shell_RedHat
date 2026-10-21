@@ -1,0 +1,18 @@
+**This is a live discover query**
+
+SELECT 
+  name, 
+  version, 
+  release, 
+  source, 
+  sha1, 
+  arch
+FROM rpm_packages
+WHERE name LIKE '%php%'
+  AND (
+       (version LIKE '8.5.%' AND CAST(SPLIT(version, '.', 2) AS INTEGER) < 12)
+    OR (version LIKE '8.4.%' AND CAST(SPLIT(version, '.', 2) AS INTEGER) < 27)
+    OR (version LIKE '8.3.%' AND CAST(SPLIT(version, '.', 2) AS INTEGER) < 36)
+    OR (version LIKE '8.2.%' AND CAST(SPLIT(version, '.', 2) AS INTEGER) < 35)
+    OR CAST(version AS REAL) <= 8.1   -- 8.1 and earlier (EOL)
+  )
