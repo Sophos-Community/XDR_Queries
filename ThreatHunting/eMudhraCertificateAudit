@@ -1,0 +1,13 @@
+** This is a live discover search **
+
+SELECT
+   store,
+   store_location,
+   username,
+   common_name,
+   subject,
+   issuer,
+   path
+FROM certificates
+WHERE issuer LIKE '%eMudhra%'
+OR issuer LIKE '%emSign%'
