@@ -1,0 +1,41 @@
+WITH php_processes AS (
+SELECT
+meta_hostname,
+file_version,
+product_name,
+name,
+original_filename,
+path,
+TRY_CAST(split_part(file_version, '.', 1) AS integer) AS php_major,
+TRY_CAST(split_part(file_version, '.', 2) AS integer) AS php_minor,
+TRY_CAST(split_part(file_version, '.', 3) AS integer) AS php_patch
+FROM
+xdr_data
+WHERE
+AND query_name = 'running_processes_windows_sophos'
+AND lower(original_filename) LIKE '%php%.exe%'
+)
+  
+SELECT
+meta_hostname,
+file_version,
+product_name,
+name,
+original_filename,
+path
+FROM
+php_processes
+WHERE
+php_major < 8                                          -- PHP 7 and older
+OR (php_major = 8 AND php_minor < 2)                   -- PHP 8.0 and 8.1
+OR (php_major = 8 AND php_minor = 2 AND php_patch < 35) -- 8.2 before 8.2.35
+OR (php_major = 8 AND php_minor = 3 AND php_patch < 36) -- 8.3 before 8.3.36
+OR (php_major = 8 AND php_minor = 4 AND php_patch < 27) -- 8.4 before 8.4.27
+OR (php_major = 8 AND php_minor = 5 AND php_patch < 12) -- 8.5 before 8.5.12
+GROUP BY
+meta_hostname,
+file_version,
+product_name,
+name,
+original_filename,
+path
